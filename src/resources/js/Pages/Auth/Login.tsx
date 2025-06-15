@@ -8,7 +8,7 @@ import { Label } from '@/Components/ui/label';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import InputError from '@/Components/InputError';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
-import { LogIn, AlertCircle } from 'lucide-react';
+import {LogIn, AlertCircle, Loader2} from 'lucide-react';
 
 interface LoginProps {
     canResetPassword?: boolean;
@@ -169,7 +169,7 @@ const Login = ({ canResetPassword, status }: LoginProps) => {
                                 >
                                     {processing ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             Signing in...
                                         </>
                                     ) : (

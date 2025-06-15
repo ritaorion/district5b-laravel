@@ -72,7 +72,7 @@ Route::controller(UserController::class)
         Route::get('/blogs/{id}', 'blog')->name('blog.show');
         Route::post('/blogs', 'createBlog')->name('blog.store');
         Route::patch('/blogs/{id}', 'updateBlog')->name('blog.update');
-        Route::delete('/blogs/{id}', 'deleteBlog')->name('blog.destroy');
+        Route::delete('/blogs/{blog}', 'deleteBlog')->name('blog.destroy');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

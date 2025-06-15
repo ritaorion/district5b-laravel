@@ -113,19 +113,7 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
         form.reset(data);
     }, [data, form]);
 
-    const onSubmit = async (formData: SiteSettingsFormData) => {
-        const sanitizedData: SiteSettingsFormData = {
-            ...formData,
-            notify_contact_form_email: formData.notify_contact_form_email === '' ? null : formData.notify_contact_form_email,
-            copyright_text_content: formData.copyright_text_content === '' ? null : formData.copyright_text_content,
-            site_title: formData.site_title === '' ? null : formData.site_title,
-            site_alert_content: formData.site_alert_content === '' ? null : formData.site_alert_content,
-        };
-
-        Object.entries(sanitizedData).forEach(([key, value]) => {
-            setData(key as keyof SiteSettingsFormData, value);
-        });
-
+    const onSubmit = async () => {
         patch(route('auth.site-settings.update'), {
             onSuccess: () => {
                 toast.success('Site settings updated successfully');
@@ -247,7 +235,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                 <Input
                                                     name={field.name}
                                                     value={field.value ?? ''}
-                                                    onChange={field.onChange}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        setData('site_title', e.target.value);
+                                                    }}
                                                     onBlur={field.onBlur}
                                                     placeholder="District 5B - Alcoholics Anonymous"
                                                     className="max-w-lg"
@@ -304,7 +295,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                         <FormControl>
                                                             <Switch
                                                                 checked={field.value as boolean}
-                                                                onCheckedChange={field.onChange}
+                                                                onCheckedChange={(checked) => {
+                                                                    field.onChange(checked);
+                                                                    setData(module.key as keyof SiteSettingsFormData, checked);
+                                                                }}
                                                             />
                                                         </FormControl>
                                                     </FormItem>
@@ -342,7 +336,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                             <FormControl>
                                                 <Switch
                                                     checked={field.value}
-                                                    onCheckedChange={field.onChange}
+                                                    onCheckedChange={(checked) => {
+                                                        field.onChange(checked);
+                                                        setData('site_alert_enabled', checked);
+                                                    }}
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -359,7 +356,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                 <Textarea
                                                     name={field.name}
                                                     value={field.value ?? ''}
-                                                    onChange={field.onChange}
+                                                    onChange={(e) => {
+                                                        field.onChange(e);
+                                                        setData('site_alert_content', e.target.value);
+                                                    }}
                                                     onBlur={field.onBlur}
                                                     placeholder="Enter your important announcement here..."
                                                     className="w-full"
@@ -402,7 +402,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                             <FormControl>
                                                 <Switch
                                                     checked={field.value}
-                                                    onCheckedChange={field.onChange}
+                                                    onCheckedChange={(checked) => {
+                                                        field.onChange(checked);
+                                                        setData('notify_contact_form_submission', checked);
+                                                    }}
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -420,7 +423,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                     <Input
                                                         name={field.name}
                                                         value={field.value ?? ''}
-                                                        onChange={field.onChange}
+                                                        onChange={(e) => {
+                                                            field.onChange(e);
+                                                            setData('notify_contact_form_email', e.target.value);
+                                                        }}
                                                         onBlur={field.onBlur}
                                                         type="email"
                                                         placeholder="admin@district5b.org"
@@ -464,7 +470,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                             <FormControl>
                                                 <Switch
                                                     checked={field.value}
-                                                    onCheckedChange={field.onChange}
+                                                    onCheckedChange={(checked) => {
+                                                        field.onChange(checked);
+                                                        setData('copyright_text_enabled', checked);
+                                                    }}
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -482,7 +491,10 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                     <Input
                                                         name={field.name}
                                                         value={field.value ?? ''}
-                                                        onChange={field.onChange}
+                                                        onChange={(e) => {
+                                                            field.onChange(e);
+                                                            setData('copyright_text_content', e.target.value);
+                                                        }}
                                                         onBlur={field.onBlur}
                                                         placeholder="© 2024 District 5B. All rights reserved."
                                                         className="max-w-2xl"

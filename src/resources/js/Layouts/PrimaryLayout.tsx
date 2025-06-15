@@ -28,6 +28,7 @@ import LoadingSpinner from "@/Components/LoadingSpinner";
 import { Toaster } from "@/Components/ui/sonner";
 import { PageProps } from "@/types";
 import axios from 'axios';
+import { SiteAlert } from "@/Components/SiteAlert";
 import { toast } from 'sonner';
 
 interface NavItem {
@@ -48,11 +49,14 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
     const [mobilePrivacyOpen, setMobilePrivacyOpen] = useState(false);
     const [mobileWebContentOpen, setMobileWebContentOpen] = useState(false);
 
-    const { navigationResources } = usePage().props;
+    const { navigationResources, siteSettings } = usePage().props;
     const { t } = useTranslation();
     const [isClearing, setIsClearing] = useState(false);
     const pageProps = usePage<PageProps>().props;
     const user = pageProps?.auth?.user || null;
+
+    console.log('Page Props:', pageProps);
+
 
     const sortedResources = (!user && navigationResources)
         ? [...navigationResources].sort((a, b) => a.name.localeCompare(b.name))
@@ -78,7 +82,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
 
     const handleMobileMenuClose = () => {
         setIsMobileMenuOpen(false);
-        // Reset all collapsible states when menu closes
         setMobileInfoOpen(false);
         setMobileResourcesOpen(false);
         setMobilePrivacyOpen(false);
@@ -147,7 +150,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                             </Link>
                         </div>
 
-                        {/* Mobile menu button */}
                         <div className="flex md:hidden">
                             <Sheet
                                 open={isMobileMenuOpen}
@@ -160,7 +162,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                 </SheetTrigger>
                                 <SheetContent side="right" className="p-0 w-full max-w-sm">
                                     <div className="flex flex-col h-full">
-                                        {/* Header with logo */}
                                         <div className="p-6 border-b bg-white">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center">
@@ -179,10 +180,8 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                             </SheetDescription>
                                         </div>
 
-                                        {/* Scrollable navigation content */}
                                         <div className="flex-1 overflow-y-auto p-6">
                                             <nav className="flex flex-col gap-2">
-                                                {/* Main navigation items */}
                                                 {navItems.map((item) => (
                                                     <Link
                                                         key={item.name}
@@ -194,7 +193,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                     </Link>
                                                 ))}
 
-                                                {/* Authenticated user sections */}
                                                 {user && (
                                                     <Collapsible
                                                         open={mobileWebContentOpen}
@@ -229,7 +227,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                     </Link>
                                                 )}
 
-                                                {/* Public user sections */}
                                                 {!user && (
                                                     <>
                                                         <Collapsible
@@ -325,7 +322,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                             </nav>
                                         </div>
 
-                                        {/* User actions footer */}
                                         {user && (
                                             <div className="p-6 border-t bg-gray-50">
                                                 <div className="space-y-3">
@@ -373,7 +369,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                             </Sheet>
                         </div>
 
-                        {/* Navigation links (center aligned) - hidden on mobile */}
                         <nav className="hidden md:flex flex-1 justify-center">
                             <ul className="flex justify-center items-center gap-6">
                                 {navItems.map((item) => (
@@ -387,7 +382,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                     </li>
                                 ))}
 
-                                {/* Web Content dropdown for authenticated users */}
                                 {user && (
                                     <>
                                         <li>
@@ -422,7 +416,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                     </>
                                 )}
 
-                                {/* Information dropdown in desktop menu */}
                                 {!user && (
                                     <li>
                                         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
@@ -448,7 +441,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                     </li>
                                 )}
 
-                                {/* Resources dropdown in desktop menu */}
                                 {!user && (
                                     <li>
                                         <DropdownMenu>
@@ -478,7 +470,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                     </li>
                                 )}
 
-                                {/* Contact link in desktop menu */}
                                 {!user && (
                                     <li>
                                         <Link
@@ -492,7 +483,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                             </ul>
                         </nav>
 
-                        {/* Right side actions - hidden on mobile */}
                         <div className="hidden md:flex items-center space-x-4">
                             {!user && (
                                 <>
@@ -507,7 +497,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                             {t('primary_navigation.login')}
                                         </Link>
                                     </Button>
-                                    <LanguageSelector />
                                 </>
                             )}
 
@@ -546,6 +535,7 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
 
             <main className="flex-1">
                 <div className="container mx-auto px-4 py-8">
+                    <SiteAlert enabled={siteSettings.site_alert_enabled || false} content={siteSettings.site_alert_content || ''} />
                     {children}
                 </div>
             </main>
@@ -555,11 +545,13 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                     <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
                         <div className="flex flex-wrap items-center gap-4">
                             <span className="text-muted-foreground whitespace-nowrap">
-                                © {new Date().getFullYear()} District 5B
+                                © {new Date().getFullYear()} {siteSettings.site_title || ''}
                             </span>
-                            <span className="text-muted-foreground">
-                                These pages are neither endorsed nor approved by Alcoholics Anonymous World Services, Inc.
-                            </span>
+                            {siteSettings.copyright_text_enabled && (
+                                <span className="text-muted-foreground">
+                                    {siteSettings.copyright_text_content || ''}
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-3">

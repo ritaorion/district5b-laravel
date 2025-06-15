@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Document;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -47,12 +48,16 @@ class HandleInertiaRequests extends Middleware
                 })
                 ->toArray();
         });
+        $siteSettings = Cache::remember('site_settings', 60 * 60 * 24, function () {
+            return Setting::find(1);
+        });
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
             ],
             'navigationResources' => $navigationResources,
+            'siteSettings' => $siteSettings,
         ];
     }
 

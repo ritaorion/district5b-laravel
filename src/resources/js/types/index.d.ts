@@ -1,5 +1,6 @@
 import { User } from '@/types/User'
 import { NavigationResource } from "@/types/Navigation";
+import { SiteSetting } from "@/types/SiteSetting";
 
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
@@ -8,4 +9,5 @@ export type PageProps<
         user?: User;
     };
     navigationResources: NavigationResource[];
+    siteSettings: SiteSetting;
 };

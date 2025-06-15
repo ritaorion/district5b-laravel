@@ -13,19 +13,35 @@ interface StoryProps {
 }
 
 const Story = ({ story }: StoryProps) => {
-    const parseTags = (tags: string): string[] => {
-        try {
-            return JSON.parse(tags || '[]');
-        } catch (e) {
-            return [];
-        }
-    };
 
-    const tags = parseTags(story.tags);
+    const tags = story.tags || [];
+
+    console.log(story)
 
     return (
         <PrimaryLayout>
-            <Head title={story.title} />
+            <Head title={story.meta_title || story.title}>
+                <meta name="description" content={story.meta_description || story.excerpt || ''} />
+                <meta name="keywords" content={story.meta_keyword || ''} />
+
+                <meta property="og:title" content={story.meta_title || story.title} />
+                <meta property="og:description" content={story.meta_description || story.excerpt || ''} />
+                <meta property="og:type" content="article" />
+                <meta property="og:url" content={window.location.href} />
+                {story.featured_image && <meta property="og:image" content={story.featured_image} />}
+
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={story.meta_title || story.title} />
+                <meta name="twitter:description" content={story.meta_description || story.excerpt || ''} />
+                {story.featured_image && <meta name="twitter:image" content={story.featured_image} />}
+
+                <meta property="article:author" content={story.author} />
+                <meta property="article:published_time" content={story.published_at || ''} />
+                {story.category && <meta property="article:section" content={story.category} />}
+                {story.tags.map((tag, index) => (
+                    <meta key={index} property="article:tag" content={tag} />
+                ))}
+            </Head>
             <div className="container mx-auto py-6">
                 <div className="max-w-3xl mx-auto">
                     <Breadcrumbs
@@ -57,10 +73,10 @@ const Story = ({ story }: StoryProps) => {
                                     <span>By Anonymous A.</span>
                                     <span>•</span>
                                     <span>{story.published_at ? formatDate(story.published_at) : 'Not published'}</span>
-                                    {story.reading_time_minutes && (
+                                    {story.reading_time && (
                                         <>
                                             <span>•</span>
-                                            <span>{story.reading_time_minutes} min read</span>
+                                            <span>{story.reading_time} min read</span>
                                         </>
                                     )}
                                 </div>

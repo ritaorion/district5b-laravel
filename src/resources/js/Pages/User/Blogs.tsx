@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router, Link } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PrimaryLayout from '@/Layouts/PrimaryLayout';
 import { Button } from '@/Components/ui/button';
@@ -55,15 +55,42 @@ import {
     Tag,
     Image as ImageIcon,
     Globe,
+    Search,
+    X, Loader2,
 } from 'lucide-react';
 import { PageProps } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { Blog } from '@/types/Blog';
+import { toast } from 'sonner';
+import axios from 'axios';
+
+interface PaginationData {
+    current_page: number;
+    data: Blog[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+}
 
 interface BlogsPageProps extends PageProps {
-    blogs: Blog[];
+    blogs: PaginationData;
+    filters?: {
+        search?: string | null;
+    };
     flash?: {
         success?: string;
         error?: string;
@@ -172,7 +199,7 @@ const DeleteConfirmationDialog = ({open, onClose, onConfirm, title, isSubmitting
                 <Button variant="destructive" onClick={onConfirm} disabled={isSubmitting}>
                     {isSubmitting ? (
                         <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Deleting...
                         </>
                     ) : (
@@ -199,15 +226,17 @@ const BlogDialog = ({open, onClose, blog}: {
         slug: blog?.slug || '',
         content: blog?.content || '',
         excerpt: blog?.excerpt || '',
+        author: blog?.author || '',
         featured_image: blog?.featured_image || '',
         meta_title: blog?.meta_title || '',
         meta_description: blog?.meta_description || '',
-        meta_keyword: blog?.meta_keywords || '',
+        meta_keyword: blog?.meta_keyword || '',
         reading_time: blog?.reading_time || 5,
         is_active: blog?.is_active ?? true,
         is_featured: blog?.is_featured ?? false,
         category: blog?.category || '',
-        tags: blog?.tags || [],
+        tags: blog?.tags?.join(', ') || '', // Store as string
+        published_at: blog?.published_at ? blog.published_at.split('T')[0] : '',
     });
 
     useEffect(() => {
@@ -217,15 +246,17 @@ const BlogDialog = ({open, onClose, blog}: {
                 slug: blog.slug || '',
                 content: blog.content || '',
                 excerpt: blog.excerpt || '',
+                author: blog.author || '',
                 featured_image: blog.featured_image || '',
                 meta_title: blog.meta_title || '',
                 meta_description: blog.meta_description || '',
-                meta_keyword: blog.meta_keywords || '',
+                meta_keyword: blog.meta_keyword || '',
                 reading_time: blog.reading_time || 5,
                 is_active: blog.is_active ?? true,
                 is_featured: blog.is_featured ?? false,
                 category: blog.category || '',
-                tags: blog.tags || [],
+                tags: blog.tags?.join(', ') || '', // Convert array to string
+                published_at: blog.published_at ? blog.published_at.split('T')[0] : '',
             });
         } else {
             reset();
@@ -243,27 +274,45 @@ const BlogDialog = ({open, onClose, blog}: {
 
         if (blog) {
             patch(route('auth.blog.update', blog.id), {
+                onBefore: () => {
+                    const tagsArray = data.tags
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(Boolean);
+                    setData('tags', tagsArray as any);
+                },
                 onSuccess: () => {
+                    toast.success('Blog post updated successfully!');
                     onClose();
                     reset();
+                },
+                onError: () => {
+                    toast.error('Failed to update blog post. Please check the errors.');
                 },
             });
         } else {
             post(route('auth.blog.store'), {
+                onBefore: () => {
+                    const tagsArray = data.tags
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(Boolean);
+                    setData('tags', tagsArray as any);
+                },
                 onSuccess: () => {
+                    toast.success('Blog post created successfully!');
                     onClose();
                     reset();
+                },
+                onError: () => {
+                    toast.error('Failed to create blog post. Please check the errors.');
                 },
             });
         }
     };
 
-    const handleTagsChange = (value: string) => {
-        const tags = value
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(Boolean);
-        setData('tags', tags);
+    const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setData('tags', e.target.value);
     };
 
     return (
@@ -281,8 +330,8 @@ const BlogDialog = ({open, onClose, blog}: {
                     </DialogHeader>
 
                     <div className="flex flex-1 min-h-0">
-                        {/* Left Sidebar - Form Fields */}
-                        <div className="w-1/4 border-r">
+                        {/* Left Sidebar - Form Fields - WIDENED */}
+                        <div className="w-1/3 border-r">
                             <ScrollArea className="h-full px-6">
                                 <form onSubmit={handleSubmit} className="space-y-6 py-6">
                                     <div className="space-y-2">
@@ -310,6 +359,18 @@ const BlogDialog = ({open, onClose, blog}: {
                                             {blog ? 'Slug cannot be changed for existing blogs' : 'Auto-generated from title'}
                                         </p>
                                         <InputError message={errors.slug} />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="author">Author *</Label>
+                                        <Input
+                                            id="author"
+                                            value={data.author}
+                                            onChange={(e) => setData('author', e.target.value)}
+                                            placeholder="Author name"
+                                            disabled={processing}
+                                        />
+                                        <InputError message={errors.author} />
                                     </div>
 
                                     <div className="space-y-2">
@@ -353,8 +414,9 @@ const BlogDialog = ({open, onClose, blog}: {
                                         <Label htmlFor="tags">Tags</Label>
                                         <Input
                                             id="tags"
-                                            value={data.tags.join(', ')}
-                                            onChange={(e) => handleTagsChange(e.target.value)}
+                                            type="text"
+                                            value={data.tags}
+                                            onChange={handleTagsChange}
                                             placeholder="tag1, tag2, tag3"
                                             disabled={processing}
                                         />
@@ -375,6 +437,20 @@ const BlogDialog = ({open, onClose, blog}: {
                                         <InputError message={errors.reading_time} />
                                     </div>
 
+                                    <div className="space-y-2">
+                                        <Label htmlFor="published_at">Publish Date</Label>
+                                        <Input
+                                            id="published_at"
+                                            type="date"
+                                            value={data.published_at}
+                                            onChange={(e) => setData('published_at', e.target.value)}
+                                            disabled={processing}
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            Leave empty to publish immediately when active
+                                        </p>
+                                        <InputError message={errors.published_at} />
+                                    </div>
                                     <div className="space-y-4">
                                         <Label>SEO Settings</Label>
                                         <div className="space-y-3">
@@ -497,7 +573,6 @@ const BlogDialog = ({open, onClose, blog}: {
                             </div>
                         </div>
                     </div>
-
                     <DialogFooter className="px-6 py-4 border-t">
                         <Button
                             type="button"
@@ -514,7 +589,7 @@ const BlogDialog = ({open, onClose, blog}: {
                         >
                             {processing ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     {blog ? 'Updating...' : 'Creating...'}
                                 </>
                             ) : (
@@ -537,13 +612,39 @@ const BlogDialog = ({open, onClose, blog}: {
 };
 
 export default function Blogs() {
-    const { blogs, flash } = usePage<BlogsPageProps>().props;
+    const { blogs, filters, flash } = usePage<BlogsPageProps>().props;
     const [openDialog, setOpenDialog] = useState(false);
     const [openMarkdownHelp, setOpenMarkdownHelp] = useState(false);
     const [selectedBlog, setSelectedBlog] = useState<Blog | undefined>();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [search, setSearch] = useState(filters?.search || '');
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const { delete: destroy, processing: isDeleting } = useForm();
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            handleFilter();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    const handleFilter = () => {
+        const params: Record<string, string> = {};
+        if (search) params.search = search;
+
+        router.get(route('auth.blogs'), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        router.get(route('auth.blogs'), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     const handleEdit = (blog: Blog) => {
         setSelectedBlog(blog);
@@ -555,15 +656,22 @@ export default function Blogs() {
         setDeleteDialogOpen(true);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!selectedBlog) return;
+        setIsDeleting(true);
+        try {
+            await axios.delete(route('auth.blog.destroy', selectedBlog.id));
+            toast.success('Blog post deleted successfully!');
+            setDeleteDialogOpen(false);
+            setSelectedBlog(undefined);
+            router.reload();
 
-        destroy(route('auth.blog.destroy', selectedBlog.id), {
-            onSuccess: () => {
-                setDeleteDialogOpen(false);
-                setSelectedBlog(undefined);
-            },
-        });
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || 'Failed to delete blog post';
+            toast.error(errorMessage);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -584,7 +692,6 @@ export default function Blogs() {
             <Head title="Blog Management" />
 
             <div className="space-y-6">
-                {/* Header */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="bg-blue-100 p-2 rounded-lg">
@@ -596,8 +703,6 @@ export default function Blogs() {
                         </div>
                     </div>
                 </div>
-
-                {/* Flash Messages */}
                 <AnimatePresence>
                     {flash?.success && (
                         <motion.div
@@ -632,7 +737,6 @@ export default function Blogs() {
                     )}
                 </AnimatePresence>
 
-                {/* Markdown Help Alert */}
                 <Alert className="bg-blue-50 border-blue-200">
                     <AlertTitle className="text-blue-900 text-lg">
                         How do I use markdown to write blogs?
@@ -643,15 +747,14 @@ export default function Blogs() {
                             variant="outline"
                             size="sm"
                             onClick={() => setOpenMarkdownHelp(true)}
-                            className=""
+                            className="ml-2"
                         >
                             Learn more about markdown formatting
                         </Button>
                     </AlertDescription>
                 </Alert>
 
-                {/* Statistics Cards */}
-                {blogs.length > 0 && (
+                {blogs.data.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Card>
                             <CardContent className="p-6">
@@ -659,7 +762,7 @@ export default function Blogs() {
                                     <FileText className="h-8 w-8 text-blue-600" />
                                     <div className="ml-4">
                                         <p className="text-sm font-medium text-gray-600">Total Posts</p>
-                                        <p className="text-2xl font-bold text-gray-900">{blogs.length}</p>
+                                        <p className="text-2xl font-bold text-gray-900">{blogs.total}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -672,7 +775,7 @@ export default function Blogs() {
                                     <div className="ml-4">
                                         <p className="text-sm font-medium text-gray-600">Published</p>
                                         <p className="text-2xl font-bold text-gray-900">
-                                            {blogs.filter(blog => blog.is_active).length}
+                                            {blogs.data.filter(blog => blog.is_active).length}
                                         </p>
                                     </div>
                                 </div>
@@ -686,7 +789,7 @@ export default function Blogs() {
                                     <div className="ml-4">
                                         <p className="text-sm font-medium text-gray-600">Total Views</p>
                                         <p className="text-2xl font-bold text-gray-900">
-                                            {blogs.reduce((sum, blog) => sum + blog.views, 0).toLocaleString()}
+                                            {blogs.data.reduce((sum, blog) => sum + blog.views, 0).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
@@ -700,7 +803,7 @@ export default function Blogs() {
                                     <div className="ml-4">
                                         <p className="text-sm font-medium text-gray-600">Featured</p>
                                         <p className="text-2xl font-bold text-gray-900">
-                                            {blogs.filter(blog => blog.is_featured).length}
+                                            {blogs.data.filter(blog => blog.is_featured).length}
                                         </p>
                                     </div>
                                 </div>
@@ -709,33 +812,65 @@ export default function Blogs() {
                     </div>
                 )}
 
-                {/* Main Content */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                            placeholder="Search by title, author, category, or status..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-10"
+                        />
+                        {search && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearSearch}
+                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+
+                    <Button
+                        onClick={() => {
+                            setSelectedBlog(undefined);
+                            setOpenDialog(true);
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Blog Post
+                    </Button>
+                </div>
+
+                {blogs.total > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                        Showing {blogs.from || 0} to {blogs.to || 0} of {blogs.total} blog posts
+                        {search && (
+                            <span className="ml-2">
+                                matching "{search}"
+                            </span>
+                        )}
+                    </div>
+                )}
+
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" />
-                                Blog Posts
-                            </CardTitle>
-                            <CardDescription>
-                                Manage your blog posts and content. Create engaging stories for your community.
-                            </CardDescription>
-                        </div>
-                        <Button
-                            onClick={() => {
-                                setSelectedBlog(undefined);
-                                setOpenDialog(true);
-                            }}
-                        >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Create Blog Post
-                        </Button>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Blog Posts
+                        </CardTitle>
+                        <CardDescription>
+                            Manage your blog posts and content. Create engaging stories for your community.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Title</TableHead>
+                                    <TableHead>Author</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Category</TableHead>
                                     <TableHead>Reading Time</TableHead>
@@ -745,28 +880,40 @@ export default function Blogs() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {blogs.length === 0 ? (
+                                {blogs.data.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center py-8">
+                                        <TableCell colSpan={8} className="text-center py-8">
                                             <div className="flex flex-col items-center gap-2">
                                                 <FileText className="h-8 w-8 text-gray-400" />
-                                                <p className="text-gray-500">No blog posts found</p>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setSelectedBlog(undefined);
-                                                        setOpenDialog(true);
-                                                    }}
-                                                >
-                                                    <Plus className="mr-2 h-4 w-4" />
-                                                    Create your first blog post
-                                                </Button>
+                                                <p className="text-gray-500">
+                                                    {search ? (
+                                                        <>
+                                                            No blog posts found matching "{search}".
+                                                            <br />
+                                                            Try adjusting your search terms.
+                                                        </>
+                                                    ) : (
+                                                        'No blog posts found'
+                                                    )}
+                                                </p>
+                                                {!search && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setSelectedBlog(undefined);
+                                                            setOpenDialog(true);
+                                                        }}
+                                                    >
+                                                        <Plus className="mr-2 h-4 w-4" />
+                                                        Create your first blog post
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    blogs.map((blog) => (
+                                    blogs.data.map((blog) => (
                                         <TableRow key={blog.id}>
                                             <TableCell>
                                                 <div className="space-y-1">
@@ -774,6 +921,11 @@ export default function Blogs() {
                                                     <div className="text-sm text-gray-500">
                                                         /{blog.slug}
                                                     </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-sm text-gray-600">
+                                                    {blog.author}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -804,7 +956,7 @@ export default function Blogs() {
                                             <TableCell>
                                                 <div className="flex items-center gap-1 text-sm text-gray-600">
                                                     <Clock className="h-3 w-3" />
-                                                    {formatReadingTime(blog.reading_time? blog.reading_time : 0)}
+                                                    {formatReadingTime(blog.reading_time || 0)}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -857,11 +1009,59 @@ export default function Blogs() {
                                 )}
                             </TableBody>
                         </Table>
+
+                        {blogs.last_page > 1 && (
+                            <div className="flex justify-center mt-6">
+                                <div className="flex items-center space-x-2">
+                                    {blogs.prev_page_url && (
+                                        <Link
+                                            href={blogs.prev_page_url}
+                                            preserveState
+                                            preserveScroll
+                                        >
+                                            <Button variant="outline" size="sm">
+                                                Previous
+                                            </Button>
+                                        </Link>
+                                    )}
+
+                                    {blogs.links
+                                        .filter(link => link.label !== '&laquo; Previous' && link.label !== 'Next &raquo;')
+                                        .map((link, index) => (
+                                            <Link
+                                                key={index}
+                                                href={link.url || '#'}
+                                                preserveState
+                                                preserveScroll
+                                                className={link.url ? '' : 'pointer-events-none'}
+                                            >
+                                                <Button
+                                                    variant={link.active ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    disabled={!link.url}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
+                                            </Link>
+                                        ))}
+
+                                    {blogs.next_page_url && (
+                                        <Link
+                                            href={blogs.next_page_url}
+                                            preserveState
+                                            preserveScroll
+                                        >
+                                            <Button variant="outline" size="sm">
+                                                Next
+                                            </Button>
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Dialogs */}
             <BlogDialog
                 open={openDialog}
                 onClose={() => {

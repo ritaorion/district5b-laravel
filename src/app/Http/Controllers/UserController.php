@@ -161,15 +161,15 @@ class UserController extends Controller
 
     /**
      * @param Request $request
-     * @return JsonResponse
+     * @return RedirectResponse
      */
-    public function updateSiteSettings(Request $request): JsonResponse
+    public function updateSiteSettings(Request $request): RedirectResponse
     {
         $settings = Setting::find(1);
         $settings->update($request->all());
 
         Cache::forget('site_settings');
-        return response()->json(['message' => 'Site settings updated successfully.']);
+        return redirect()->back()->with('success', 'Site settings updated successfully.');
     }
 
     /**
@@ -551,7 +551,7 @@ class UserController extends Controller
             return $query->paginate($perPage);
         });
 
-        return Inertia::render('Auth/Blogs', [
+        return Inertia::render('User/Blogs', [
             'blogs' => $data,
             'filters' => [
                 'search' => $search,
@@ -614,7 +614,7 @@ class UserController extends Controller
 
             Blog::create($validated);
 
-            Cache::flush();
+            $this->clearBlogListCaches();
 
             return redirect()->route('auth.blogs')->with('success', 'Blog post created successfully!');
 
@@ -677,6 +677,7 @@ class UserController extends Controller
             if (empty($validated['slug'])) {
                 $validated['slug'] = $this->generateUniqueSlug($validated['title'], $id);
             }
+
             if ($validated['published_at']) {
                 $validated['published_at'] = Carbon::parse($validated['published_at']);
             } elseif (($validated['is_active'] ?? false) && !$blog->published_at) {
@@ -691,7 +692,8 @@ class UserController extends Controller
             }
 
             $blog->update($validated);
-            Cache::flush();
+            Cache::forget("auth_blog_{$id}");
+            $this->clearBlogListCaches();
 
             return redirect()->route('auth.blogs')->with('success', 'Blog post updated successfully!');
 
@@ -710,23 +712,21 @@ class UserController extends Controller
     }
 
     /**
-     * @param $id
-     * @return RedirectResponse
+     * @param int $id
+     * @return JsonResponse
      */
-    public function deleteBlog($id): RedirectResponse
+    public function deleteBlog(int $id): JsonResponse
     {
         try {
             $blog = Blog::findOrFail($id);
-
-            if ($blog->user_id !== auth()->id()) {
-                return redirect()->back()->with('error', 'Unauthorized to delete this blog post.');
-            }
-
             $blog->delete();
 
-            Cache::flush();
+            Cache::forget("auth_blog_{$id}");
+            $this->clearBlogListCaches();
 
-            return redirect()->route('auth.blogs')->with('success', 'Blog post deleted successfully!');
+            return response()->json([
+                'message' => 'Blog post deleted successfully!'
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Blog deletion failed: ' . $e->getMessage(), [
@@ -735,7 +735,9 @@ class UserController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'We encountered an error while deleting the blog post. Please try again.');
+            return response()->json([
+                'message' => 'We encountered an error while deleting the blog post. Please try again.'
+            ], 500);
         }
     }
 
@@ -764,5 +766,15 @@ class UserController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * Clear specific blog-related cache keys
+     */
+    private function clearBlogListCaches(): void
+    {
+        for ($page = 1; $page <= 10; $page++) {
+            Cache::forget("auth_blogs_p{$page}_s" . md5(''));
+        }
     }
 }
