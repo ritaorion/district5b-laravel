@@ -43,7 +43,7 @@ const Index = () => {
                 variants={pageVariants}
             >
                 {/* Hero Section */}
-                <section className="w-full py-8 md:py-12 lg:min-h-[calc(100vh-8rem)]">
+                <section className="w-full pb-8 md:pb-12 lg:min-h-[calc(100vh-8rem)]">
                     <motion.div
                         className="container grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center"
                         variants={staggerContainer}
