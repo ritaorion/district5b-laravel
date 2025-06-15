@@ -1,0 +1,38 @@
+networks:
+  d5b-laravel:
+    driver: bridge
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+      - "8080:8080"
+    volumes:
+      - "../src:/app"
+    networks:
+      - d5b-laravel
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - d5b-laravel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:
