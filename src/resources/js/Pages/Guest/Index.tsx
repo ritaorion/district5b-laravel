@@ -84,13 +84,6 @@ const Index = () => {
                                         District 5B
                                     </h1>
                                     <p className="mt-8 text-lg font-medium text-gray-500 sm:max-w-md sm:text-xl lg:max-w-none">
-                                        We are the General Service Representatives.
-                                        We are the link in the chain of communication for our groups with the
-                                        General Service Conference and the world of A.A.
-                                        We realize the ultimate authority is a loving God as he may express
-                                        Himself in our Group Conscience.
-                                        <br/>
-                                        <br/>
                                         District 5B is part of <Link href="/area42" className="text-[#1a3a7e] hover:underline font-semibold">Area 42</Link>, and more specifically Southern Area 42 (SAGSC). We support AA groups and members through service work and leadership development in Las Vegas and rural northern areas.
                                     </p>
                                     <div className="mt-10 flex items-center gap-x-6">
