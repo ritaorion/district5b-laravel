@@ -22,5 +22,13 @@ class UserSeeder extends Seeder
             'email' => 'andrewmgodby@gmail.com',
             'password' => Hash::make('Nuya2616'),
         ]);
+        User::create([
+            'username' => 'D5B',
+            'first_name' => 'District',
+            'last_name' => '5B',
+            'is_admin' => true,
+            'email' => 'support@district5b.com',
+            'password' => Hash::make('[2yzZcyX66#i'),
+        ]);
     }
 }
