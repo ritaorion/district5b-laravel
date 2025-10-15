@@ -268,14 +268,16 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                                     View All Resources
                                                                 </Link>
                                                                 {sortedResources.map((item) => (
-                                                                    <Link
+                                                                    <a
                                                                         key={item.name}
-                                                                        href={item.path}
+                                                                        href={`/resources/${encodeURIComponent(item.name)}?action=view`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
                                                                         className="block px-3 py-2 text-base font-medium rounded-md hover:bg-gray-100 transition-colors"
                                                                         onClick={handleMobileMenuClose}
                                                                     >
                                                                         {item.name}
-                                                                    </Link>
+                                                                    </a>
                                                                 ))}
                                                             </CollapsibleContent>
                                                         </Collapsible>
@@ -460,9 +462,13 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                 </DropdownMenuItem>
                                                 {sortedResources.map((item, index) => (
                                                     <DropdownMenuItem key={index} asChild>
-                                                        <Link href={item.path}>
+                                                        <a 
+                                                            href={`/resources/${encodeURIComponent(item.name)}?action=view`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
                                                             {item.name}
-                                                        </Link>
+                                                        </a>
                                                     </DropdownMenuItem>
                                                 ))}
                                             </DropdownMenuContent>

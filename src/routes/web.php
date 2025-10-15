@@ -19,6 +19,7 @@ if(App::environment() === 'local') {
 }
 
 Route::controller(GuestController::class)
+    ->middleware('guest')
     ->name('guest.')
     ->group(function() {
         Route::get('/', 'index')->name('index');
@@ -36,12 +37,16 @@ Route::controller(GuestController::class)
         Route::get('/resources/{fileName}', 'resource')->name('resource.show');
         Route::get('/contact', 'contact')->name('contact');
         Route::post('/contact', 'sendContactForm')->name('contact.send');
+
+        Route::get('/privacy-policy', 'privacyPolicy')->name('privacy-policy');
+        Route::get('/cookie-policy', 'cookiePolicy')->name('cookie-policy');
+        Route::get('/terms-of-use', 'termsOfUse')->name('terms-of-use');
     });
 
 Route::controller(UserController::class)
     ->name('auth.')
     ->prefix('auth')
-    ->middleware(['auth'])
+    ->middleware('auth')
     ->group(function() {
         Route::get('/dashboard', 'index')->name('index');
         Route::get('/contact-forms', 'contactForms')->name('contact-forms');

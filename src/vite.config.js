@@ -30,11 +30,19 @@ export default defineConfig({
     server: {
         host: "0.0.0.0",
         port: 5173,
-        open: false,
-        cors: true,
-        origin: 'http://0.0.0.0:5173',
+        strictPort: true,
         hmr: {
-            host: '0.0.0.0',
+            host: 'localhost',
+            protocol: 'ws',
+            clientPort: 5173,
         },
+        watch: {
+            usePolling: true,
+            interval: 300
+        },
+        cors: {
+            origin: true,
+            credentials: true
+        }
     },
 });

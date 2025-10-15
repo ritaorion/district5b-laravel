@@ -1,0 +1,68 @@
+networks:
+  d5b-laravel-network:
+    driver: bridge
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "5173:5173"
+    volumes:
+      - ./src:/var/www/html
+      - ./.docker/ssl:/etc/nginx/ssl:ro
+    networks:
+      - d5b-laravel-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "d5b.local:127.0.0.1"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: d5b_db
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - d5b-laravel-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    ports:
+      - "40001:80"
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOSTS: mysql
+      PMA_PORTS: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    networks:
+      - d5b-laravel-network
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
