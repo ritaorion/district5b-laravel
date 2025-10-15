@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\Faq;
 use App\Models\Document;
+use App\Models\Roster;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -739,6 +740,107 @@ class UserController extends Controller
                 'message' => 'We encountered an error while deleting the blog post. Please try again.'
             ], 500);
         }
+    }
+
+    /**
+     * @return Response
+     */
+    public function meetings(): Response
+    {
+        return Inertia::render('User/Meetings');
+    }
+
+    /**
+     * @return Response
+     */
+    public function rosters(): Response
+    {
+        $cacheKey = 'rosters';
+
+        $rosters = Cache::remember($cacheKey, $this->cacheLifetime, function () {
+            return Roster::orderBy('created_at', 'desc')->get()->toArray();
+        });
+
+        return Inertia::render('User/Rosters', [
+            'rosters' => $rosters,
+        ]);
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function roster(int $id): JsonResponse
+    {
+        $cacheKey = 'roster';
+
+        $roster = Cache::remember("{$cacheKey}_{$id}", $this->cacheLifetime, function () use ($id) {
+            return Roster::findOrFail($id);
+        });
+
+        return response()->json($roster);
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function createRoster(Request $request): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $roster = Roster::create($validatedData);
+
+        Cache::forget('rosters');
+
+        return response()->json([
+            'message' => 'Roster entry created successfully.',
+            'roster' => $roster
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function updateRoster(Request $request, int $id): JsonResponse
+    {
+        $roster = Roster::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $roster->update($validatedData);
+
+        Cache::forget('rosters');
+        Cache::forget("roster_{$id}");
+
+        return response()->json(['message' => 'Roster entry updated successfully.']);
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function deleteRoster(int $id): JsonResponse
+    {
+        $roster = Roster::findOrFail($id);
+        $roster->delete();
+
+        Cache::forget('rosters');
+        Cache::forget("roster_{$id}");
+
+        return response()->json(['message' => 'Roster entry deleted successfully.']);
     }
 
     /**

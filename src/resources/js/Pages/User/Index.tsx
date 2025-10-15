@@ -71,8 +71,8 @@ export default function Dashboard() {
 
                 <Alert className="bg-yellow-50 border-yellow-200">
                     <AlertDescription className="text-yellow-800">
-                        <strong>Demo Notice:</strong> This dashboard is showing placeholder data for demonstration purposes only.
-                        Real metrics and data will be displayed here once the system is fully implemented.
+                        <strong>Important!</strong> This dashboard is showing placeholder data for demonstration purposes only.
+                        Real metrics and data will be displayed here once the website is fully live. Metrics shown in the demo below are subject to change.
                     </AlertDescription>
                 </Alert>
 

@@ -125,7 +125,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         </div>
                     </div>
 
-                    {/* Calendar header - days of week */}
                     <div className="grid grid-cols-7 gap-1 mb-1">
                         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                             <div key={day} className="text-center font-medium py-2 text-muted-foreground">
@@ -134,7 +133,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         ))}
                     </div>
 
-                    {/* Calendar grid */}
                     <div className="grid grid-cols-7 gap-1 mb-6">
                         {days.map((day, index) => {
                             const dayEvents = getEventsForDay(day)
@@ -170,7 +168,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         })}
                     </div>
 
-                    {/* No events message */}
                     {events.length === 0 && (
                         <div className="text-center py-10">
                             <p className="text-muted-foreground">
@@ -181,7 +178,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         </div>
                     )}
 
-                    {/* Event Detail Dialog */}
                     {isDialogOpen && selectedEvent && (
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogContent>

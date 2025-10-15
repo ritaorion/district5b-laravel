@@ -81,6 +81,12 @@ Route::controller(UserController::class)
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        Route::get('/meetings', 'meetings')->name('meetings');
+        Route::get('/rosters', 'rosters')->name('rosters');
+        Route::get('/rosters/{id}', 'roster')->name('roster.show');
+        Route::post('/rosters', 'createRoster')->name('roster.store');
+        Route::patch('/rosters/{id}', 'updateRoster')->name('roster.update');
+        Route::delete('/rosters/{id}', 'deleteRoster')->name('roster.destroy');
 
         Route::post('/clear-cache', 'clearCache')->name('clear-cache');
     });
