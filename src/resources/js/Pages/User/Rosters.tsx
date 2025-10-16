@@ -76,6 +76,7 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+
     const createForm = useForm({
         name: '',
         title: '',
@@ -194,24 +195,6 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
         }
     }, [error]);
 
-    const restoreBodyPointerEvents = React.useCallback(() => {
-        document.body.style.removeProperty('pointer-events');
-        document.body.style.removeProperty('overflow');
-    }, []);
-
-    React.useEffect(() => {
-        return () => {
-            restoreBodyPointerEvents();
-        };
-    }, [restoreBodyPointerEvents]);
-
-    React.useEffect(() => {
-        if (!isEditDialogOpen && !isCreateDialogOpen && !isDeleteDialogOpen) {
-            setTimeout(() => {
-                restoreBodyPointerEvents();
-            }, 100);
-        }
-    }, [isEditDialogOpen, isCreateDialogOpen, isDeleteDialogOpen, restoreBodyPointerEvents]);
 
     return (
         <PrimaryLayout>
@@ -279,7 +262,7 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
                                                     {roster.email || 'N/A'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
+                                                    <DropdownMenu modal={false}>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" className="h-8 w-8 p-0">
                                                                 <span className="sr-only">Open menu</span>
@@ -318,9 +301,6 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
                     setIsCreateDialogOpen(open);
                     if (!open) {
                         resetCreateForm();
-                        setTimeout(() => {
-                            restoreBodyPointerEvents();
-                        }, 50);
                     }
                 }}
             >
@@ -425,9 +405,6 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
                     if (!open) {
                         setSelectedRoster(null);
                         resetEditForm();
-                        setTimeout(() => {
-                            restoreBodyPointerEvents();
-                        }, 50);
                     }
                 }}
             >
@@ -531,9 +508,6 @@ const Rosters = ({ rosters: initialRosters }: RostersProps) => {
                     setIsDeleteDialogOpen(open);
                     if (!open) {
                         setSelectedRoster(null);
-                        setTimeout(() => {
-                            restoreBodyPointerEvents();
-                        }, 50);
                     }
                 }}
             >

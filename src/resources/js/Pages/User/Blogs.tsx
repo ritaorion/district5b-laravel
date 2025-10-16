@@ -214,22 +214,23 @@ const DeleteConfirmationDialog = ({open, onClose, onConfirm, title, isSubmitting
     </Dialog>
 );
 
-const BlogDialog = ({open, onClose, blog}: {
+const BlogDialog = ({open, onClose, blog, pendingStoryData}: {
     open: boolean;
     onClose: () => void;
     blog?: Blog;
+    pendingStoryData?: any;
 }) => {
     const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
 
     const { data, setData, post, patch, processing, errors, reset } = useForm({
-        title: blog?.title || '',
-        slug: blog?.slug || '',
-        content: blog?.content || '',
-        excerpt: blog?.excerpt || '',
-        author: blog?.author || '',
+        title: blog?.title || pendingStoryData?.title || '',
+        slug: blog?.slug || (pendingStoryData?.title ? generateSlug(pendingStoryData.title) : ''),
+        content: blog?.content || pendingStoryData?.content || '',
+        excerpt: blog?.excerpt || (pendingStoryData?.content ? pendingStoryData.content.substring(0, 300) + '...' : ''),
+        author: blog?.author || (pendingStoryData?.anonymous ? 'Anonymous' : pendingStoryData?.author) || '',
         featured_image: blog?.featured_image || '',
-        meta_title: blog?.meta_title || '',
-        meta_description: blog?.meta_description || '',
+        meta_title: blog?.meta_title || pendingStoryData?.title || '',
+        meta_description: blog?.meta_description || (pendingStoryData?.content ? pendingStoryData.content.substring(0, 160) + '...' : '') || '',
         meta_keyword: blog?.meta_keyword || '',
         reading_time: blog?.reading_time || 5,
         is_active: blog?.is_active ?? true,
@@ -258,10 +259,29 @@ const BlogDialog = ({open, onClose, blog}: {
                 tags: blog.tags?.join(', ') || '', // Convert array to string
                 published_at: blog.published_at ? blog.published_at.split('T')[0] : '',
             });
+        } else if (pendingStoryData) {
+            // Prefill form with pending story data
+            setData({
+                title: pendingStoryData.title || '',
+                slug: pendingStoryData.title ? generateSlug(pendingStoryData.title) : '',
+                content: pendingStoryData.content || '',
+                excerpt: pendingStoryData.content ? pendingStoryData.content.substring(0, 300) + '...' : '',
+                author: pendingStoryData.anonymous ? 'Anonymous' : (pendingStoryData.author || ''),
+                featured_image: '',
+                meta_title: pendingStoryData.title || '',
+                meta_description: pendingStoryData.content ? pendingStoryData.content.substring(0, 160) + '...' : '',
+                meta_keyword: '',
+                reading_time: 5,
+                is_active: true,
+                is_featured: false,
+                category: '',
+                tags: '',
+                published_at: '',
+            });
         } else {
             reset();
         }
-    }, [blog]);
+    }, [blog, pendingStoryData]);
 
     useEffect(() => {
         if (!blog && data.title) {
@@ -616,6 +636,26 @@ export default function Blogs() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [search, setSearch] = useState(filters?.search || '');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [pendingStoryData, setPendingStoryData] = useState<any>(null);
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refId = urlParams.get('ref');
+
+        if (refId) {
+            axios.get(`/auth/pending-stories/${refId}`)
+                .then(response => {
+                    setPendingStoryData(response.data);
+                    setOpenDialog(true);
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, '', newUrl);
+                })
+                .catch(error => {
+                    console.error('Failed to fetch pending story:', error);
+                    toast.error('Failed to load story data');
+                });
+        }
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -969,7 +1009,7 @@ export default function Blogs() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <DropdownMenu>
+                                                <DropdownMenu modal={false}>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">
                                                             <span className="sr-only">Open menu</span>
@@ -1064,8 +1104,10 @@ export default function Blogs() {
                 onClose={() => {
                     setOpenDialog(false);
                     setSelectedBlog(undefined);
+                    setPendingStoryData(null);
                 }}
                 blog={selectedBlog}
+                pendingStoryData={pendingStoryData}
             />
 
             <DeleteConfirmationDialog

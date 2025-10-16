@@ -36,29 +36,21 @@ interface NavItem {
     path: string;
 }
 
-interface ResourceItem {
-    name: string;
-    path: string;
-}
 
 const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNode}>) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
-    const [mobileResourcesOpen, setMobileResourcesOpen] = useState(false);
     const [mobilePrivacyOpen, setMobilePrivacyOpen] = useState(false);
     const [mobileWebContentOpen, setMobileWebContentOpen] = useState(false);
 
-    const { navigationResources, siteSettings } = usePage().props;
+    const { siteSettings } = usePage().props;
     const { t } = useTranslation();
     const [isClearing, setIsClearing] = useState(false);
     const pageProps = usePage<PageProps>().props;
     const user = pageProps?.auth?.user || null;
 
 
-    const sortedResources = (!user && navigationResources)
-        ? [...navigationResources].sort((a, b) => a.name.localeCompare(b.name))
-        : [];
 
     const handleLogout = () => {
         router.post('/logout')
@@ -81,7 +73,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
     const handleMobileMenuClose = () => {
         setIsMobileMenuOpen(false);
         setMobileInfoOpen(false);
-        setMobileResourcesOpen(false);
         setMobilePrivacyOpen(false);
         setMobileWebContentOpen(false);
     };
@@ -121,6 +112,7 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
         { name: t('secondary_navigation.meetings'), path: '/auth/meetings' },
         { name: t('secondary_navigation.rosters'), path: '/auth/rosters' },
         { name: t('secondary_navigation.blogs'), path: '/auth/blogs' },
+        { name: t('secondary_navigation.user_stories'), path: '/auth/pending-stories' },
     ];
 
     const navItems = user ? authenticatedNavItems : publicNavItems;
@@ -251,36 +243,13 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                         </Collapsible>
 
                                                         {siteSettings.resources_mod_enabled && (
-                                                            <Collapsible
-                                                                open={mobileResourcesOpen}
-                                                                onOpenChange={setMobileResourcesOpen}
+                                                            <Link
+                                                                href="/resources"
+                                                                className="px-3 py-3 text-lg font-medium rounded-md hover:bg-gray-100 transition-colors"
+                                                                onClick={handleMobileMenuClose}
                                                             >
-                                                                <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 text-lg font-medium rounded-md hover:bg-gray-100 transition-colors">
-                                                                    {t('primary_navigation.resources_label')}
-                                                                    <ChevronRight className={`h-4 w-4 transition-transform ${mobileResourcesOpen ? 'rotate-90' : ''}`} />
-                                                                </CollapsibleTrigger>
-                                                                <CollapsibleContent className="pl-6">
-                                                                    <Link
-                                                                        href="/resources"
-                                                                        className="block px-3 py-2 text-base font-semibold rounded-md hover:bg-gray-100 transition-colors"
-                                                                        onClick={handleMobileMenuClose}
-                                                                    >
-                                                                        View All Resources
-                                                                    </Link>
-                                                                    {sortedResources.map((item) => (
-                                                                        <a
-                                                                            key={item.name}
-                                                                            href={`/resources/${encodeURIComponent(item.name)}?action=view`}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="block px-3 py-2 text-base font-medium rounded-md hover:bg-gray-100 transition-colors"
-                                                                            onClick={handleMobileMenuClose}
-                                                                        >
-                                                                            {item.name}
-                                                                        </a>
-                                                                    ))}
-                                                                </CollapsibleContent>
-                                                            </Collapsible>
+                                                                {t('primary_navigation.resources_label')}
+                                                            </Link>
                                                         )}
 
                                                         <Collapsible
@@ -446,34 +415,12 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
 
                                 {!user && siteSettings.resources_mod_enabled && (
                                     <li>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 flex items-center whitespace-nowrap"
-                                                >
-                                                    {t('primary_navigation.resources_label')}
-                                                    <ChevronDown className="ml-1 h-4 w-4"/>
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="center" className="w-[300px]">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/resources">
-                                                        <strong>View All Resources</strong>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                {sortedResources.map((item, index) => (
-                                                    <DropdownMenuItem key={index} asChild>
-                                                        <a
-                                                            href={`/resources/${encodeURIComponent(item.name)}?action=view`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                        >
-                                                            {item.name}
-                                                        </a>
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <Link
+                                            href="/resources"
+                                            className="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 whitespace-nowrap"
+                                        >
+                                            {t('primary_navigation.resources_label')}
+                                        </Link>
                                     </li>
                                 )}
 

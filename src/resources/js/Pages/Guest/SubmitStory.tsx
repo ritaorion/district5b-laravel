@@ -27,6 +27,7 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
         title: '',
         content: '',
         author: '',
+        email: '',
         anonymous: false as boolean,
     });
 
@@ -37,6 +38,7 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                 title: '',
                 content: '',
                 author: '',
+                email: '',
                 anonymous: false,
             })
         }
@@ -162,6 +164,25 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                                     disabled={processing}
                                 />
                                 <InputError message={errors.content} className="mt-2" />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-base font-medium">
+                                    Email Address *
+                                </Label>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    We'll use this email to notify you when your story is reviewed and if it's published or if we need more information.
+                                </p>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="Enter your email address"
+                                    className="text-base"
+                                    disabled={processing}
+                                />
+                                <InputError message={errors.email} className="mt-2" />
                             </div>
 
                             <div className="space-y-2">

@@ -79,6 +79,7 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [isDragging, setIsDragging] = useState<boolean>(false);
 
+
     const editForm = useForm({
         file_name: '',
         original_file_name: '',
@@ -248,7 +249,6 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
         return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
     };
 
-    // Clear error after 5 seconds
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(null), 5000);
@@ -329,7 +329,7 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
                                                 </TableCell>
                                                 <TableCell>{formatDate(resource.created_at)}</TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
+                                                    <DropdownMenu modal={false}>
                                                         <DropdownMenuTrigger>
                                                             <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
                                                                 <MoreHorizontal className="h-4 w-4" />

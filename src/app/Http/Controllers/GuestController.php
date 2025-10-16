@@ -8,9 +8,11 @@ use App\Models\PendingStory;
 use App\Models\Roster;
 use App\Models\Faq;
 use App\Models\Setting;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Cache;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactFormSubmitted;
+use App\Mail\StorySubmitted;
 
 class GuestController extends Controller
 {
@@ -236,7 +239,7 @@ class GuestController extends Controller
                     ];
                 })->toArray();
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Failed to fetch meetings data', [
                     'error' => $e->getMessage(),
                     'search_term' => $searchTerm
@@ -373,7 +376,7 @@ class GuestController extends Controller
                 ->header('Content-Type', $document->mime_type)
                 ->header('Content-Disposition', 'inline; filename="' . $document->original_file_name . '"');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             abort(404, 'File could not be retrieved');
         }
     }
@@ -447,7 +450,7 @@ class GuestController extends Controller
                     foreach ($emailAddresses as $emailAddress) {
                         try {
                             Mail::to($emailAddress)->send(new ContactFormSubmitted($contactData));
-                        } catch (\Exception $mailException) {
+                        } catch (Exception $mailException) {
                             Log::warning('Failed to send contact form notification email', [
                                 'recipient' => $emailAddress,
                                 'error' => $mailException->getMessage(),
@@ -461,7 +464,7 @@ class GuestController extends Controller
 
             return back()->with('success', 'Your message has been sent successfully! We will get back to you soon.');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Contact form submission failed', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
@@ -500,7 +503,7 @@ class GuestController extends Controller
     /**
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function storeStory(Request $request)
     {
@@ -508,6 +511,7 @@ class GuestController extends Controller
             $rules = [
                 'title' => 'required|string|max:255',
                 'content' => 'required|string|max:10000',
+                'email' => 'required|email|max:255',
                 'anonymous' => 'required|boolean',
             ];
             if (!$request->boolean('anonymous')) {
@@ -521,25 +525,53 @@ class GuestController extends Controller
                 'title.max' => 'The title cannot exceed 255 characters.',
                 'content.required' => 'Please share your story content.',
                 'content.max' => 'The story content cannot exceed 10,000 characters.',
+                'email.required' => 'Please provide an email address for notifications.',
+                'email.email' => 'Please provide a valid email address.',
+                'email.max' => 'The email address cannot exceed 255 characters.',
                 'author.required' => 'Please provide an author name or check anonymous.',
                 'author.max' => 'The author name cannot exceed 100 characters.',
                 'anonymous.required' => 'Please specify if you want to remain anonymous.',
             ]);
 
-            PendingStory::create([
+            $story = PendingStory::create([
                 'title' => $validated['title'],
                 'content' => $validated['content'],
                 'author' => $validated['anonymous'] ? null : $validated['author'],
+                'email' => $validated['email'],
                 'anonymous' => $validated['anonymous'],
             ]);
 
+            $settings = Setting::find(1);
+            if ($settings && $settings->notify_contact_form_submission && $settings->notify_contact_form_email) {
+                $emailAddresses = collect(explode(',', $settings->notify_contact_form_email))
+                    ->map(fn($email) => trim($email))
+                    ->filter(fn($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+                    ->toArray();
+
+                if (!empty($emailAddresses)) {
+                    foreach ($emailAddresses as $emailAddress) {
+                        try {
+                            Mail::to($emailAddress)->send(new StorySubmitted($story));
+                        } catch (Exception $mailException) {
+                            Log::warning('Failed to send story submission notification email', [
+                                'recipient' => $emailAddress,
+                                'error' => $mailException->getMessage(),
+                                'story_id' => $story->id,
+                                'story_title' => $story->title,
+                                'submitter_email' => $story->email,
+                            ]);
+                        }
+                    }
+                }
+            }
+
             return redirect()->back()->with([
-                'success' => 'Thank you for sharing your story! Your submission has been received and will be reviewed before publication.'
+                'success' => 'Thank you for sharing your story! Your submission has been received and will be reviewed before publication. We\'ll notify you by email once it\'s been reviewed.'
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Story submission failed: ' . $e->getMessage(), [
                 'user_data' => $request->all(),
                 'exception' => $e

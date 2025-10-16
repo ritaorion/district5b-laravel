@@ -47,10 +47,10 @@ interface IUsersProps {
 interface IUsersState {
     username: string;
     email: string;
-    password: string;
     first_name: string;
     last_name: string;
     is_admin: boolean;
+    password?: string; // Optional for editing existing users
 }
 
 const Users = ({ users: initialUsers }: IUsersProps) => {
@@ -64,18 +64,17 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
     const [formData, setFormData] = useState<Partial<IUsersState>>({
         username: '',
         email: '',
-        password: '',
         first_name: '',
         last_name: '',
         is_admin: false,
     });
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+
     const resetFormData = () => {
         setFormData({
             username: '',
             email: '',
-            password: '',
             first_name: '',
             last_name: '',
             is_admin: false,
@@ -90,7 +89,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
             const payload = {
                 username: formData.username || "",
                 email: formData.email || "",
-                password: formData.password || "password123",
                 first_name: formData.first_name || "",
                 last_name: formData.last_name || "",
                 is_admin: Boolean(formData.is_admin)
@@ -98,7 +96,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
             const response = await axios.post(route('auth.user.store'), payload);
             setUsers(prevUsers => [response.data.user, ...prevUsers]);
 
-            toast.success('User created successfully');
+            toast.success(response.data.message || 'User created successfully');
             setIsCreateDialogOpen(false);
             resetFormData();
         } catch (error: any) {
@@ -187,7 +185,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
             first_name: user.first_name,
             last_name: user.last_name,
             is_admin: user.is_admin,
-            password: '',
+            password: '', // Empty for editing
         });
         setIsEditDialogOpen(true);
     };
@@ -287,7 +285,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                                                 </TableCell>
                                                 <TableCell>{formatDate(user.created_at)}</TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
+                                                    <DropdownMenu modal={false}>
                                                         <DropdownMenuTrigger>
                                                             <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
                                                                 <MoreHorizontal className="h-4 w-4" />
@@ -320,7 +318,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                         <DialogHeader>
                             <DialogTitle>Create New User</DialogTitle>
                             <DialogDescription>
-                                Add a new user to the system.
+                                Add a new user to the system. They will receive a welcome email to set up their password.
                             </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -373,20 +371,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                                     value={formData.last_name || ''}
                                     onChange={handleInputChange}
                                     className="col-span-3"
-                                />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="password" className="text-right">
-                                    Password
-                                </Label>
-                                <Input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password || ''}
-                                    onChange={handleInputChange}
-                                    className="col-span-3"
-                                    placeholder="Default: password123"
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PasswordSetupController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\UserController;
@@ -44,6 +45,13 @@ Route::controller(GuestController::class)
         Route::get('/terms-of-use', 'termsOfUse')->name('terms-of-use');
     });
 
+Route::controller(PasswordSetupController::class)
+    ->name('password.')
+    ->group(function() {
+        Route::get('/password-setup/{user}', 'show')->name('setup');
+        Route::post('/password-setup/{user}', 'store')->name('setup.store');
+    });
+
 Route::controller(UserController::class)
     ->name('auth.')
     ->prefix('auth')
@@ -54,6 +62,7 @@ Route::controller(UserController::class)
         Route::get('/contact-forms/{id}', 'contactForm')->name('contact-form.show');
         Route::delete('/contact-forms/{id}', 'deleteContactForm')->name('contact-form.destroy');
         Route::get('/users', 'users')->name('users');
+        Route::post('/users', 'createUser')->name('user.store');
         Route::get('/users/{id}', 'user')->name('user.show');
         Route::patch('/users/{id}', 'updateUser')->name('user.update');
         Route::delete('/users/{id}', 'deleteUser')->name('user.destroy');
@@ -88,6 +97,11 @@ Route::controller(UserController::class)
         Route::post('/rosters', 'createRoster')->name('roster.store');
         Route::patch('/rosters/{id}', 'updateRoster')->name('roster.update');
         Route::delete('/rosters/{id}', 'deleteRoster')->name('roster.destroy');
+        Route::get('/pending-stories', 'pendingStories')->name('pending-stories');
+        Route::get('/pending-stories/{id}', 'pendingStory')->name('pending-story.show');
+        Route::post('/pending-stories/{id}/approve', 'approvePendingStory')->name('pending-story.approve');
+        Route::post('/pending-stories/{id}/reject', 'rejectPendingStory')->name('pending-story.reject');
+        Route::delete('/pending-stories/{id}', 'deletePendingStory')->name('pending-story.destroy');
 
         Route::post('/clear-cache', 'clearCache')->name('clear-cache');
     });

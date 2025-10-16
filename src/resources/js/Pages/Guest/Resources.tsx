@@ -10,7 +10,7 @@ import {
     TableRow
 } from '@/Components/ui/table';
 import { Search, Download, Eye, X } from 'lucide-react';
-import { formatFileSize } from "@/lib/utils";
+import {cn, formatFileSize, isMobile} from "@/lib/utils";
 import Breadcrumbs from '@/Components/Breadcrumbs';
 import { motion, AnimatePresence } from "framer-motion";
 import { pageVariants } from "@/lib/animations";
@@ -241,8 +241,10 @@ export default function Resources({ documents, filters }: ResourcesProps) {
                                                                 size="sm"
                                                                 onClick={() => handleView(doc.original_file_name)}
                                                             >
-                                                                <Eye className="h-4 w-4 mr-2" />
-                                                                View
+                                                                <Eye className={cn(isMobile() ? '' : 'mr-2', 'h-4 w-4')} />
+                                                                {!isMobile() && (
+                                                                    <span>View</span>
+                                                                )}
                                                             </Button>
                                                         </motion.div>
                                                         <motion.div
@@ -254,8 +256,10 @@ export default function Resources({ documents, filters }: ResourcesProps) {
                                                                 size="sm"
                                                                 onClick={() => handleDownload(doc.original_file_name)}
                                                             >
-                                                                <Download className="h-4 w-4 mr-2" />
-                                                                Download
+                                                                <Download className={cn(isMobile() ? '' : 'mr-2', 'h-4 w-4')} />
+                                                                {!isMobile() && (
+                                                                    <span>Download</span>
+                                                                )}
                                                             </Button>
                                                         </motion.div>
                                                     </div>
