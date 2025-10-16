@@ -69,7 +69,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Inertia forms for create and edit
     const createForm = useForm({
         title: '',
         description: '',
@@ -134,7 +133,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                 end_time: editForm.data.end_time ? formatDateTimeForAPI(editForm.data.end_time) : ''
             });
 
-            // Update event in local state
             setEvents(prevEvents =>
                 prevEvents.map(event =>
                     event.id === selectedEvent.id
@@ -231,7 +229,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00${tzString}`;
     };
 
-    // Clear error after 5 seconds
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(null), 5000);
@@ -341,8 +338,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Create Event Dialog */}
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -435,8 +430,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Edit Event Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -528,8 +521,6 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete Event Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

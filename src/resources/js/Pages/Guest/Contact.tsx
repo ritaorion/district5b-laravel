@@ -24,7 +24,7 @@ import {
 import Breadcrumbs from "@/Components/Breadcrumbs";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageVariants, staggerContainer } from "@/lib/animations";
-import { Head, useForm } from '@inertiajs/react';
+import {Head, useForm, usePage} from '@inertiajs/react';
 import PrimaryLayout from '@/Layouts/PrimaryLayout';
 import { RosterMember } from '@/types/Roster';
 
@@ -68,6 +68,9 @@ export default function Contact({ roster }: ContactProps) {
             (member.phone?.toLowerCase().includes(query) ?? false)
         );
     });
+
+    const { props } = usePage();
+    const siteSettings = props.siteSettings;
 
     return (
         <PrimaryLayout>
@@ -257,92 +260,94 @@ export default function Contact({ roster }: ContactProps) {
                             </Card>
                         </motion.div>
 
-                        <motion.div
-                            className="space-y-6"
-                            variants={pageVariants}
-                        >
-                            <div>
-                                <h2 className="text-2xl font-bold mb-4">District Roster</h2>
-                                <p className="text-muted-foreground mb-4">
-                                    Contact our district officers and committee chairs directly.
-                                </p>
+                        {siteSettings.roster_mod_enabled && (
+                            <motion.div
+                                className="space-y-6"
+                                variants={pageVariants}
+                            >
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-4">District Roster</h2>
+                                    <p className="text-muted-foreground mb-4">
+                                        Contact our district officers and committee chairs directly.
+                                    </p>
 
-                                <motion.div
-                                    className="relative mb-6"
-                                    variants={pageVariants}
-                                >
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        type="text"
-                                        placeholder="Search by title, name, email, or phone..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10"
-                                    />
-                                </motion.div>
-
-                                {filteredRoster.length === 0 ? (
                                     <motion.div
-                                        className="text-center py-8"
+                                        className="relative mb-6"
                                         variants={pageVariants}
                                     >
-                                        <p className="text-muted-foreground">
-                                            {searchQuery ? 'No roster members found matching your search.' : 'No roster information available.'}
-                                        </p>
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Search by title, name, email, or phone..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-10"
+                                        />
                                     </motion.div>
-                                ) : (
-                                    <motion.div
-                                        className="space-y-4"
-                                        variants={staggerContainer}
-                                    >
-                                        {filteredRoster.map((member, index) => (
-                                            <motion.div
-                                                key={member.id}
-                                                variants={pageVariants}
-                                                initial="initial"
-                                                animate="animate"
-                                                transition={{ delay: index * 0.1 }}
-                                            >
-                                                <Card className="h-full">
-                                                    <CardHeader className="pb-3">
-                                                        <CardTitle className="text-lg">{member.title}</CardTitle>
-                                                        <CardDescription className="text-base font-medium">
-                                                            {member.name}
-                                                        </CardDescription>
-                                                    </CardHeader>
-                                                    <CardContent className="pt-0">
-                                                        <div className="space-y-2">
-                                                            {member.phone && (
-                                                                <div className="flex items-center gap-2 text-sm">
-                                                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                                                    <a
-                                                                        href={`tel:${member.phone}`}
-                                                                        className="hover:underline"
-                                                                    >
-                                                                        {member.phone}
-                                                                    </a>
-                                                                </div>
-                                                            )}
-                                                            {member.email && (
-                                                                <div className="flex items-center gap-2 text-sm">
-                                                                    <Mail className="h-4 w-4 text-muted-foreground" />
-                                                                    <a
-                                                                        href={`mailto:${member.email}`}
-                                                                        className="text-primary hover:underline"
-                                                                    >
-                                                                        {member.email}
-                                                                    </a>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            </motion.div>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </div>
-                        </motion.div>
+
+                                    {filteredRoster.length === 0 ? (
+                                        <motion.div
+                                            className="text-center py-8"
+                                            variants={pageVariants}
+                                        >
+                                            <p className="text-muted-foreground">
+                                                {searchQuery ? 'No roster members found matching your search.' : 'No roster information available.'}
+                                            </p>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            className="space-y-4"
+                                            variants={staggerContainer}
+                                        >
+                                            {filteredRoster.map((member, index) => (
+                                                <motion.div
+                                                    key={member.id}
+                                                    variants={pageVariants}
+                                                    initial="initial"
+                                                    animate="animate"
+                                                    transition={{ delay: index * 0.1 }}
+                                                >
+                                                    <Card className="h-full">
+                                                        <CardHeader className="pb-3">
+                                                            <CardTitle className="text-lg">{member.title}</CardTitle>
+                                                            <CardDescription className="text-base font-medium">
+                                                                {member.name}
+                                                            </CardDescription>
+                                                        </CardHeader>
+                                                        <CardContent className="pt-0">
+                                                            <div className="space-y-2">
+                                                                {member.phone && (
+                                                                    <div className="flex items-center gap-2 text-sm">
+                                                                        <Phone className="h-4 w-4 text-muted-foreground" />
+                                                                        <a
+                                                                            href={`tel:${member.phone}`}
+                                                                            className="hover:underline"
+                                                                        >
+                                                                            {member.phone}
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                                {member.email && (
+                                                                    <div className="flex items-center gap-2 text-sm">
+                                                                        <Mail className="h-4 w-4 text-muted-foreground" />
+                                                                        <a
+                                                                            href={`mailto:${member.email}`}
+                                                                            className="text-primary hover:underline"
+                                                                        >
+                                                                            {member.email}
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                </motion.div>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             </motion.div>

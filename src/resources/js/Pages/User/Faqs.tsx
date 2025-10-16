@@ -275,8 +275,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Create FAQ Dialog */}
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -333,8 +331,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Edit FAQ Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -389,8 +385,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete FAQ Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

@@ -55,8 +55,6 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
     const pageProps = usePage<PageProps>().props;
     const user = pageProps?.auth?.user || null;
 
-    console.log('Page Props:', pageProps);
-
 
     const sortedResources = (!user && navigationResources)
         ? [...navigationResources].sort((a, b) => a.name.localeCompare(b.name))
@@ -91,15 +89,16 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
     const publicNavItems: NavItem[] = [
         { name: t('primary_navigation.home'), path: '/' },
         { name: t('primary_navigation.map'), path: '/map' },
-        { name: t('primary_navigation.blogs'), path: '/stories' },
+        ...(siteSettings.blog_mod_enabled ? [{ name: t('primary_navigation.blogs'), path: '/stories' }] : []),
     ];
 
     const informationItems: NavItem[] = [
         { name: t('primary_navigation.acronyms'), path: '/acronyms' },
         { name: t('primary_navigation.agsr'), path: '/agsr' },
         { name: t('primary_navigation.gsr'), path: '/gsr' },
-        { name: t('primary_navigation.meetings'), path: '/meetings' },
-        { name: t('primary_navigation.events'), path: '/events' },
+        ...(siteSettings.meetings_mod_enabled ? [{ name: t('primary_navigation.meetings'), path: '/meetings' }] : []),
+        ...(siteSettings.events_mod_enabled ? [{ name: t('primary_navigation.events'), path: '/events' }] : []),
+        ...(siteSettings.faqs_mod_enabled ? [{ name: t('primary_navigation.faqs'), path: '/faqs' }] : []),
     ];
 
     const privacyItems: NavItem[] = [
@@ -251,36 +250,38 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                             </CollapsibleContent>
                                                         </Collapsible>
 
-                                                        <Collapsible
-                                                            open={mobileResourcesOpen}
-                                                            onOpenChange={setMobileResourcesOpen}
-                                                        >
-                                                            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 text-lg font-medium rounded-md hover:bg-gray-100 transition-colors">
-                                                                {t('primary_navigation.resources_label')}
-                                                                <ChevronRight className={`h-4 w-4 transition-transform ${mobileResourcesOpen ? 'rotate-90' : ''}`} />
-                                                            </CollapsibleTrigger>
-                                                            <CollapsibleContent className="pl-6">
-                                                                <Link
-                                                                    href="/resources"
-                                                                    className="block px-3 py-2 text-base font-semibold rounded-md hover:bg-gray-100 transition-colors"
-                                                                    onClick={handleMobileMenuClose}
-                                                                >
-                                                                    View All Resources
-                                                                </Link>
-                                                                {sortedResources.map((item) => (
-                                                                    <a
-                                                                        key={item.name}
-                                                                        href={`/resources/${encodeURIComponent(item.name)}?action=view`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="block px-3 py-2 text-base font-medium rounded-md hover:bg-gray-100 transition-colors"
+                                                        {siteSettings.resources_mod_enabled && (
+                                                            <Collapsible
+                                                                open={mobileResourcesOpen}
+                                                                onOpenChange={setMobileResourcesOpen}
+                                                            >
+                                                                <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 text-lg font-medium rounded-md hover:bg-gray-100 transition-colors">
+                                                                    {t('primary_navigation.resources_label')}
+                                                                    <ChevronRight className={`h-4 w-4 transition-transform ${mobileResourcesOpen ? 'rotate-90' : ''}`} />
+                                                                </CollapsibleTrigger>
+                                                                <CollapsibleContent className="pl-6">
+                                                                    <Link
+                                                                        href="/resources"
+                                                                        className="block px-3 py-2 text-base font-semibold rounded-md hover:bg-gray-100 transition-colors"
                                                                         onClick={handleMobileMenuClose}
                                                                     >
-                                                                        {item.name}
-                                                                    </a>
-                                                                ))}
-                                                            </CollapsibleContent>
-                                                        </Collapsible>
+                                                                        View All Resources
+                                                                    </Link>
+                                                                    {sortedResources.map((item) => (
+                                                                        <a
+                                                                            key={item.name}
+                                                                            href={`/resources/${encodeURIComponent(item.name)}?action=view`}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="block px-3 py-2 text-base font-medium rounded-md hover:bg-gray-100 transition-colors"
+                                                                            onClick={handleMobileMenuClose}
+                                                                        >
+                                                                            {item.name}
+                                                                        </a>
+                                                                    ))}
+                                                                </CollapsibleContent>
+                                                            </Collapsible>
+                                                        )}
 
                                                         <Collapsible
                                                             open={mobilePrivacyOpen}
@@ -443,7 +444,7 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                     </li>
                                 )}
 
-                                {!user && (
+                                {!user && siteSettings.resources_mod_enabled && (
                                     <li>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -462,7 +463,7 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
                                                 </DropdownMenuItem>
                                                 {sortedResources.map((item, index) => (
                                                     <DropdownMenuItem key={index} asChild>
-                                                        <a 
+                                                        <a
                                                             href={`/resources/${encodeURIComponent(item.name)}?action=view`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
@@ -540,8 +541,8 @@ const PrimaryLayout = ({ header, children }: PropsWithChildren<{header?: ReactNo
             </header>
 
             <main className="flex-1">
-                <div className="container mx-auto px-4 py-8">
-                    <SiteAlert enabled={siteSettings.site_alert_enabled || false} content={siteSettings.site_alert_content || ''} />
+                <SiteAlert enabled={siteSettings.site_alert_enabled || false} content={siteSettings.site_alert_content || ''} />
+                <div className="container mx-auto px-4 py-3">
                     {children}
                 </div>
             </main>

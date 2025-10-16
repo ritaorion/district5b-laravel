@@ -71,7 +71,7 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
 
     return (
         <PrimaryLayout>
-            <Head title="AA Meetings Calendar" />
+            <Head title="District Meetings Calendar" />
             <div className="container mx-auto py-6">
                 <div className="max-w-4xl mx-auto">
                     <Breadcrumbs
@@ -82,9 +82,9 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                     />
 
                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold mb-2">AA Meetings Calendar</h1>
+                        <h1 className="text-3xl font-bold mb-2">District Meetings Calendar</h1>
                         <p className="text-muted-foreground">
-                            Find upcoming Alcoholics Anonymous meetings and events in your area.
+                            Find upcoming District 5B meetings and events in your area.
                             {events.length > 0 && ` Currently showing ${events.length} events.`}
                         </p>
                     </div>

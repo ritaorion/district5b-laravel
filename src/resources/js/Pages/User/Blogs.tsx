@@ -330,7 +330,6 @@ const BlogDialog = ({open, onClose, blog}: {
                     </DialogHeader>
 
                     <div className="flex flex-1 min-h-0">
-                        {/* Left Sidebar - Form Fields - WIDENED */}
                         <div className="w-1/3 border-r">
                             <ScrollArea className="h-full px-6">
                                 <form onSubmit={handleSubmit} className="space-y-6 py-6">
@@ -517,8 +516,6 @@ const BlogDialog = ({open, onClose, blog}: {
                                 </form>
                             </ScrollArea>
                         </div>
-
-                        {/* Content Editor and Preview */}
                         <div className="flex-1 flex min-h-0">
                             <div className="w-1/2 border-r p-6 flex flex-col min-h-0">
                                 <div className="flex items-center justify-between mb-2">

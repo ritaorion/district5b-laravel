@@ -247,8 +247,6 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* View Contact Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                     <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
@@ -308,8 +306,6 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete Contact Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

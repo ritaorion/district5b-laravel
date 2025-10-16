@@ -6,6 +6,8 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\PendingStory;
 use App\Models\Roster;
+use App\Models\Faq;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -16,6 +18,8 @@ use App\Models\Blog;
 use App\Models\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ContactFormSubmitted;
 
 class GuestController extends Controller
 {
@@ -23,7 +27,7 @@ class GuestController extends Controller
 
     public function __construct()
     {
-        $this->cacheLifetime = 60; // Cache lifetime in minutes
+        $this->cacheLifetime = 10; // Cache lifetime in minutes
     }
     /**
      * @return Response
@@ -46,6 +50,10 @@ class GuestController extends Controller
      */
     public function stories(): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
+
         $perPage = 20;
         $search = request('search');
         $category = request('category');
@@ -95,6 +103,10 @@ class GuestController extends Controller
      */
     public function story(string $slug): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
+
         $cacheKey = "public_story_{$slug}";
 
         $story = Cache::remember($cacheKey, $this->cacheLifetime, function () use ($slug) {
@@ -189,6 +201,9 @@ class GuestController extends Controller
      */
     public function meetings(): Response
     {
+        if(!$this->siteSettings()->meetings_mod_enabled) {
+            abort(404);
+        }
         $searchTerm = request('search', 'District 5b');
         $cacheKey = "meetings_" . md5($searchTerm);
 
@@ -244,6 +259,9 @@ class GuestController extends Controller
      */
     public function events(Request $request): Response
     {
+        if(!$this->siteSettings()->events_mod_enabled) {
+            abort(404);
+        }
         $perPage = 20;
         $search = $request->get('search');
         $page = $request->get('page', 1);
@@ -285,6 +303,9 @@ class GuestController extends Controller
      */
     public function resources(Request $request): Response
     {
+        if(!$this->siteSettings()->resources_mod_enabled) {
+            abort(404);
+        }
         $perPage = 20;
         $search = $request->get('search');
         $page = $request->get('page', 1);
@@ -323,6 +344,9 @@ class GuestController extends Controller
      */
     public function resource(string $fileName): \Illuminate\Http\Response
     {
+        if(!$this->siteSettings()->resources_mod_enabled) {
+            abort(404);
+        }
         $action = request()->get('action', 'view');
 
         $document = Cache::remember("resource_file_{$fileName}", $this->cacheLifetime, function () use ($fileName) {
@@ -405,8 +429,35 @@ class GuestController extends Controller
                 'message' => $request->message,
                 'user_id' => auth()->id(),
             ]);
-
             Cache::forget('contact_forms_admin');
+            $settings = $this->siteSettings();
+            if ($settings->notify_contact_form_submission && $settings->notify_contact_form_email) {
+                $emailAddresses = collect(explode(',', $settings->notify_contact_form_email))
+                    ->map(fn($email) => trim($email))
+                    ->filter(fn($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+                    ->toArray();
+
+                if (!empty($emailAddresses)) {
+                    $contactData = [
+                        'name' => $request->name,
+                        'email' => $request->email,
+                        'subject' => $request->subject ?: 'No Subject',
+                        'message' => $request->message,
+                    ];
+                    foreach ($emailAddresses as $emailAddress) {
+                        try {
+                            Mail::to($emailAddress)->send(new ContactFormSubmitted($contactData));
+                        } catch (\Exception $mailException) {
+                            Log::warning('Failed to send contact form notification email', [
+                                'recipient' => $emailAddress,
+                                'error' => $mailException->getMessage(),
+                                'contact_name' => $request->name,
+                                'contact_email' => $request->email,
+                            ]);
+                        }
+                    }
+                }
+            }
 
             return back()->with('success', 'Your message has been sent successfully! We will get back to you soon.');
 
@@ -426,9 +477,24 @@ class GuestController extends Controller
     /**
      * @return Response
      */
-    public function submitStory()
+    public function submitStory(): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
         return Inertia::render('Guest/SubmitStory');
+    }
+
+    /**
+     * @return Response
+     */
+    public function faqs(): Response
+    {
+        $faqs = Faq::orderBy('created_at', 'desc')->get()->toArray();
+
+        return Inertia::render('Guest/Faqs', [
+            'faqs' => $faqs,
+        ]);
     }
 
     /**
@@ -483,5 +549,37 @@ class GuestController extends Controller
                 'error' => 'We encountered an error while processing your submission. Please try again, and if the problem persists, please contact us directly.'
             ])->withInput();
         }
+    }
+
+    /**
+     * @return Response
+     */
+    public function privacyPolicy(): Response
+    {
+        return Inertia::render('Guest/PrivacyPolicy');
+    }
+
+    /**
+     * @return Response
+     */
+    public function cookiePolicy(): Response
+    {
+        return Inertia::render('Guest/CookiePolicy');
+    }
+
+    /**
+     * @return Response
+     */
+    public function termsOfUse(): Response
+    {
+        return Inertia::render('Guest/TermsOfUse');
+    }
+
+    /**
+     * @return Setting
+     */
+    private function siteSettings(): Setting
+    {
+        return Setting::find(1);
     }
 }

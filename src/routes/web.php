@@ -37,6 +37,7 @@ Route::controller(GuestController::class)
         Route::get('/resources/{fileName}', 'resource')->name('resource.show');
         Route::get('/contact', 'contact')->name('contact');
         Route::post('/contact', 'sendContactForm')->name('contact.send');
+        Route::get('/faqs', 'faqs')->name('faqs');
 
         Route::get('/privacy-policy', 'privacyPolicy')->name('privacy-policy');
         Route::get('/cookie-policy', 'cookiePolicy')->name('cookie-policy');

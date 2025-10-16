@@ -8,10 +8,24 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => {
+        const currentPage = document.getElementById('app')?.getAttribute('data-page');
+        let appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+        if (currentPage) {
+            try {
+                const pageData = JSON.parse(currentPage);
+                if (pageData.props?.siteSettings?.site_title) {
+                    appName = pageData.props.siteSettings.site_title;
+                }
+            } catch (e) {
+                // Fallback to env variable if parsing fails
+            }
+        }
+
+        return `${title} - ${appName}`;
+    },
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.tsx`,

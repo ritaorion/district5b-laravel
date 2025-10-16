@@ -164,8 +164,6 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
 
         try {
             await axios.patch(route('auth.resource.update', selectedResource.id), editForm.data);
-
-            // Update resource in local state
             setResources(prevResources =>
                 prevResources.map(resource =>
                     resource.id === selectedResource.id
@@ -362,8 +360,6 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Upload Document Dialog */}
                 <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                     <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
@@ -427,8 +423,6 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Edit Resource Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
@@ -498,8 +492,6 @@ const Resources = ({ resources: initialResources }: ResourcesProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete Resource Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

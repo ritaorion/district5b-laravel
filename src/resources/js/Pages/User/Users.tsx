@@ -95,11 +95,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                 last_name: formData.last_name || "",
                 is_admin: Boolean(formData.is_admin)
             };
-
-            // Create user via API (you'll need to add this route)
             const response = await axios.post(route('auth.user.store'), payload);
-
-            // Add the new user to local state
             setUsers(prevUsers => [response.data.user, ...prevUsers]);
 
             toast.success('User created successfully');
@@ -132,7 +128,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
 
             await axios.patch(route('auth.user.update', selectedUser.id), payload);
 
-            // Update user in local state
             setUsers(prevUsers =>
                 prevUsers.map(user =>
                     user.id === selectedUser.id
@@ -162,8 +157,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
 
         try {
             await axios.delete(route('auth.user.destroy', selectedUser.id));
-
-            // Remove user from local state
             setUsers(prevUsers => prevUsers.filter(user => user.id !== selectedUser.id));
 
             toast.success('User deleted successfully');
@@ -194,7 +187,7 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
             first_name: user.first_name,
             last_name: user.last_name,
             is_admin: user.is_admin,
-            password: '', // Don't pre-fill password
+            password: '',
         });
         setIsEditDialogOpen(true);
     };
@@ -217,7 +210,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
         });
     };
 
-    // Clear error after 5 seconds
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(null), 5000);
@@ -323,8 +315,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Create User Dialog */}
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
@@ -436,8 +426,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Edit User Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
@@ -547,8 +535,6 @@ const Users = ({ users: initialUsers }: IUsersProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete User Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>
