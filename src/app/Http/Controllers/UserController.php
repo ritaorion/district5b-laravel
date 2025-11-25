@@ -209,22 +209,55 @@ class UserController extends Controller
      */
     public function createEvent(Request $request): JsonResponse
     {
-        $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'location' => 'nullable|string|max:255',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'location' => 'nullable|string|max:255',
+                'start_time' => 'required|date',
+                'end_time' => 'required|date|after:start_time',
+                'file' => 'nullable|file|max:51200|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif,zip', // 50MB max
+            ]);
 
-        $event = Event::create($validatedData);
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $originalFileName = $file->getClientOriginalName();
+                $fileName = time() . '_' . Str::slug(pathinfo($originalFileName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                $storagePath = 'events/' . $fileName;
 
-        Cache::forget('events');
+                $uploaded = Storage::disk('s3')->putFileAs(
+                    'events',
+                    $file,
+                    $fileName
+                );
 
-        return response()->json([
-            'message' => 'Event created successfully.',
-            'event' => $event
-        ]);
+                if (!$uploaded) {
+                    return response()->json([
+                        'message' => 'Failed to upload file to storage.'
+                    ], 500);
+                }
+
+                $validatedData['file_name'] = $fileName;
+                $validatedData['original_file_name'] = $originalFileName;
+                $validatedData['file_size'] = $file->getSize();
+                $validatedData['mime_type'] = $file->getMimeType();
+                $validatedData['storage_path'] = $storagePath;
+            }
+
+            $event = Event::create($validatedData);
+
+            Cache::forget('events');
+
+            return response()->json([
+                'message' => 'Event created successfully.',
+                'event' => $event
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to create event: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to create event: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -234,13 +267,59 @@ class UserController extends Controller
      */
     public function updateEvent(Request $request, int $id): JsonResponse
     {
-        $event = Event::findOrFail($id);
-        $event->update($request->all());
+        try {
+            $event = Event::findOrFail($id);
 
-        Cache::forget('events');
-        Cache::forget("event_{$id}");
+            $validatedData = $request->validate([
+                'title' => 'sometimes|string|max:255',
+                'description' => 'sometimes|string',
+                'location' => 'sometimes|string|max:255',
+                'start_time' => 'sometimes|date',
+                'end_time' => 'sometimes|date|after:start_time',
+                'file' => 'nullable|file|max:51200|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,jpg,jpeg,png,gif,zip', // 50MB max
+            ]);
 
-        return response()->json(['message' => 'Event updated successfully.']);
+            if ($request->hasFile('file')) {
+                if ($event->storage_path && Storage::disk('s3')->exists($event->storage_path)) {
+                    Storage::disk('s3')->delete($event->storage_path);
+                }
+
+                $file = $request->file('file');
+                $originalFileName = $file->getClientOriginalName();
+                $fileName = time() . '_' . Str::slug(pathinfo($originalFileName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                $storagePath = 'events/' . $fileName;
+
+                $uploaded = Storage::disk('s3')->putFileAs(
+                    'events',
+                    $file,
+                    $fileName
+                );
+
+                if (!$uploaded) {
+                    return response()->json([
+                        'message' => 'Failed to upload file to storage.'
+                    ], 500);
+                }
+
+                $validatedData['file_name'] = $fileName;
+                $validatedData['original_file_name'] = $originalFileName;
+                $validatedData['file_size'] = $file->getSize();
+                $validatedData['mime_type'] = $file->getMimeType();
+                $validatedData['storage_path'] = $storagePath;
+            }
+
+            $event->update($validatedData);
+
+            Cache::forget('events');
+            Cache::forget("event_{$id}");
+
+            return response()->json(['message' => 'Event updated successfully.']);
+        } catch (Exception $e) {
+            Log::error('Failed to update event: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to update event: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -250,6 +329,11 @@ class UserController extends Controller
     public function deleteEvent(int $id): JsonResponse
     {
         $event = Event::findOrFail($id);
+
+        if ($event->storage_path && Storage::disk('s3')->exists($event->storage_path)) {
+            Storage::disk('s3')->delete($event->storage_path);
+        }
+
         $event->delete();
 
         Cache::forget('events');

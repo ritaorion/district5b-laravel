@@ -17,7 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
-import { Calendar, Clock, MapPin, Search, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, X, Download, FileText } from 'lucide-react';
 import Breadcrumbs from "@/Components/Breadcrumbs";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageVariants, staggerContainer } from "@/lib/animations";
@@ -115,6 +115,20 @@ const Events = ({ events, filters }: EventsProps) => {
             .trim();
 
         return text.length > 150 ? text.substring(0, 147) + '...' : text;
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+
+    const getS3FileUrl = (storagePath: string): string => {
+        const bucketName = import.meta.env.VITE_AWS_BUCKET;
+        const region = import.meta.env.VITE_AWS_DEFAULT_REGION;
+        return `https://${bucketName}.s3.${region}.amazonaws.com/${storagePath}`;
     };
 
     const hasActiveFilters = search;
@@ -354,6 +368,43 @@ const Events = ({ events, filters }: EventsProps) => {
                                         <div className="mt-4">
                                             <div dangerouslySetInnerHTML={{ __html: selectedEvent.description }} />
                                         </div>
+
+                                        {/* File Attachment */}
+                                        {selectedEvent.original_file_name && selectedEvent.storage_path && (
+                                            <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex items-start gap-3 flex-1">
+                                                        <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium break-words">
+                                                                {selectedEvent.original_file_name}
+                                                            </p>
+                                                            {selectedEvent.file_size && (
+                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                    {formatFileSize(selectedEvent.file_size)}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        asChild
+                                                    >
+                                                        <a
+                                                            href={getS3FileUrl(selectedEvent.storage_path)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            download={selectedEvent.original_file_name}
+                                                        >
+                                                            <Download className="h-4 w-4 mr-2" />
+                                                            Download
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <DialogFooter className="mt-6">
                                             <Button onClick={() => setIsEventDetailOpen(false)}>Close</Button>
                                         </DialogFooter>

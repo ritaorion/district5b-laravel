@@ -15,6 +15,11 @@ class Event extends Model
         'location',
         'start_time',
         'end_time',
+        'file_name',
+        'original_file_name',
+        'file_size',
+        'mime_type',
+        'storage_path',
     ];
 
     protected $casts = [

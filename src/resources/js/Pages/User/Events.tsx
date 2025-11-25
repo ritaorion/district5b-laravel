@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PrimaryLayout from "@/Layouts/PrimaryLayout";
 import {
     Table,
@@ -39,6 +39,9 @@ import {
     MoreHorizontal,
     Plus,
     Loader2,
+    Upload,
+    File,
+    X,
 } from 'lucide-react';
 import { Head, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
@@ -51,6 +54,11 @@ interface Event {
     location: string;
     start_time: string;
     end_time: string;
+    file_name?: string | null;
+    original_file_name?: string | null;
+    file_size?: number | null;
+    mime_type?: string | null;
+    storage_path?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -68,6 +76,11 @@ const Events = ({ events: initialEvents }: EventsProps) => {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [createFile, setCreateFile] = useState<File | null>(null);
+    const [editFile, setEditFile] = useState<File | null>(null);
+
+    const createFileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     // Inertia forms for create and edit
     const createForm = useForm({
@@ -89,11 +102,27 @@ const Events = ({ events: initialEvents }: EventsProps) => {
     const resetCreateForm = () => {
         createForm.reset();
         createForm.clearErrors();
+        setCreateFile(null);
+        if (createFileInputRef.current) {
+            createFileInputRef.current.value = '';
+        }
     };
 
     const resetEditForm = () => {
         editForm.reset();
         editForm.clearErrors();
+        setEditFile(null);
+        if (editFileInputRef.current) {
+            editFileInputRef.current.value = '';
+        }
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     };
 
     const handleCreateEvent = async () => {
@@ -101,10 +130,21 @@ const Events = ({ events: initialEvents }: EventsProps) => {
         setError(null);
 
         try {
-            const response = await axios.post(route('auth.event.store'), {
-                ...createForm.data,
-                start_time: createForm.data.start_time ? formatDateTimeForAPI(createForm.data.start_time) : '',
-                end_time: createForm.data.end_time ? formatDateTimeForAPI(createForm.data.end_time) : ''
+            const formData = new FormData();
+            formData.append('title', createForm.data.title);
+            formData.append('description', createForm.data.description || '');
+            formData.append('location', createForm.data.location || '');
+            formData.append('start_time', createForm.data.start_time ? formatDateTimeForAPI(createForm.data.start_time) : '');
+            formData.append('end_time', createForm.data.end_time ? formatDateTimeForAPI(createForm.data.end_time) : '');
+
+            if (createFile) {
+                formData.append('file', createFile);
+            }
+
+            const response = await axios.post(route('auth.event.store'), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
             setEvents(prevEvents => [response.data.event, ...prevEvents]);
@@ -128,17 +168,32 @@ const Events = ({ events: initialEvents }: EventsProps) => {
         setError(null);
 
         try {
-            await axios.patch(route('auth.event.update', selectedEvent.id), {
-                ...editForm.data,
-                start_time: editForm.data.start_time ? formatDateTimeForAPI(editForm.data.start_time) : '',
-                end_time: editForm.data.end_time ? formatDateTimeForAPI(editForm.data.end_time) : ''
+            const formData = new FormData();
+            formData.append('_method', 'PATCH');
+            formData.append('title', editForm.data.title);
+            formData.append('description', editForm.data.description || '');
+            formData.append('location', editForm.data.location || '');
+            formData.append('start_time', editForm.data.start_time ? formatDateTimeForAPI(editForm.data.start_time) : '');
+            formData.append('end_time', editForm.data.end_time ? formatDateTimeForAPI(editForm.data.end_time) : '');
+
+            if (editFile) {
+                formData.append('file', editFile);
+            }
+
+            await axios.post(route('auth.event.update', selectedEvent.id), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
+
+            // Fetch updated event data
+            const eventResponse = await axios.get(route('auth.event.show', selectedEvent.id));
 
             // Update event in local state
             setEvents(prevEvents =>
                 prevEvents.map(event =>
                     event.id === selectedEvent.id
-                        ? { ...event, ...editForm.data }
+                        ? eventResponse.data
                         : event
                 )
             );
@@ -188,6 +243,7 @@ const Events = ({ events: initialEvents }: EventsProps) => {
             start_time: formatDateTimeForInput(event.start_time),
             end_time: formatDateTimeForInput(event.end_time),
         });
+        setEditFile(null);
         setIsEditDialogOpen(true);
     };
 
@@ -416,6 +472,67 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                                     className="col-span-3"
                                 />
                             </div>
+
+                            {/* File Upload */}
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label htmlFor="create-file" className="text-right pt-2">
+                                    Attachment
+                                </Label>
+                                <div className="col-span-3">
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="create-file"
+                                            ref={createFileInputRef}
+                                            type="file"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setCreateFile(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => createFileInputRef.current?.click()}
+                                            className="w-full"
+                                        >
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            {createFile ? 'Change File' : 'Upload File'}
+                                        </Button>
+                                    </div>
+                                    {createFile && (
+                                        <div className="mt-2 flex items-center justify-between p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <File className="h-4 w-4 text-muted-foreground" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium">{createFile.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatFileSize(createFile.size)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setCreateFile(null);
+                                                    if (createFileInputRef.current) {
+                                                        createFileInputRef.current.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Maximum file size: 50MB
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button
@@ -508,6 +625,87 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                                     onChange={(e) => editForm.setData('end_time', e.target.value)}
                                     className="col-span-3"
                                 />
+                            </div>
+
+                            {/* File Upload */}
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label htmlFor="edit-file" className="text-right pt-2">
+                                    Attachment
+                                </Label>
+                                <div className="col-span-3">
+                                    {/* Show existing file if any */}
+                                    {selectedEvent?.original_file_name && !editFile && (
+                                        <div className="mb-2 p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <File className="h-4 w-4 text-muted-foreground" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-medium">
+                                                        Current file: {selectedEvent.original_file_name}
+                                                    </p>
+                                                    {selectedEvent.file_size && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {formatFileSize(selectedEvent.file_size)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="edit-file"
+                                            ref={editFileInputRef}
+                                            type="file"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setEditFile(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => editFileInputRef.current?.click()}
+                                            className="w-full"
+                                        >
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            {editFile || selectedEvent?.original_file_name ? 'Replace File' : 'Upload File'}
+                                        </Button>
+                                    </div>
+
+                                    {editFile && (
+                                        <div className="mt-2 flex items-center justify-between p-2 bg-muted rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <File className="h-4 w-4 text-muted-foreground" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium">{editFile.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatFileSize(editFile.size)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setEditFile(null);
+                                                    if (editFileInputRef.current) {
+                                                        editFileInputRef.current.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Maximum file size: 50MB
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
