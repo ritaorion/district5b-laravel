@@ -390,10 +390,10 @@ const Index = () => {
                                         <div className="space-y-3 mb-6 text-gray-600">
                                             <div className="flex items-center justify-center space-x-2">
                                                 <MapPin className="h-4 w-4" />
-                                                <span className="text-sm">Choices Fellowship</span>
+                                                <span className="text-sm">KCB</span>
                                             </div>
                                             <div className="text-sm">
-                                                4343 N. Rancho Dr. #240, Las Vegas
+                                                5715 W. Alexander Rd. STE 145
                                             </div>
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Clock className="h-4 w-4" />
