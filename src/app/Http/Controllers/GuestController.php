@@ -6,9 +6,13 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\PendingStory;
 use App\Models\Roster;
+use App\Models\Faq;
+use App\Models\Setting;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +20,9 @@ use App\Models\Blog;
 use App\Models\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ContactFormSubmitted;
+use App\Mail\StorySubmitted;
 
 class GuestController extends Controller
 {
@@ -23,7 +30,7 @@ class GuestController extends Controller
 
     public function __construct()
     {
-        $this->cacheLifetime = 60; // Cache lifetime in minutes
+        $this->cacheLifetime = 10; // Cache lifetime in minutes
     }
     /**
      * @return Response
@@ -46,6 +53,10 @@ class GuestController extends Controller
      */
     public function stories(): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
+
         $perPage = 20;
         $search = request('search');
         $category = request('category');
@@ -95,6 +106,10 @@ class GuestController extends Controller
      */
     public function story(string $slug): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
+
         $cacheKey = "public_story_{$slug}";
 
         $story = Cache::remember($cacheKey, $this->cacheLifetime, function () use ($slug) {
@@ -189,6 +204,9 @@ class GuestController extends Controller
      */
     public function meetings(): Response
     {
+        if(!$this->siteSettings()->meetings_mod_enabled) {
+            abort(404);
+        }
         $searchTerm = request('search', 'District 5b');
         $cacheKey = "meetings_" . md5($searchTerm);
 
@@ -221,7 +239,7 @@ class GuestController extends Controller
                     ];
                 })->toArray();
 
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('Failed to fetch meetings data', [
                     'error' => $e->getMessage(),
                     'search_term' => $searchTerm
@@ -244,6 +262,9 @@ class GuestController extends Controller
      */
     public function events(Request $request): Response
     {
+        if(!$this->siteSettings()->events_mod_enabled) {
+            abort(404);
+        }
         $perPage = 20;
         $search = $request->get('search');
         $page = $request->get('page', 1);
@@ -285,6 +306,9 @@ class GuestController extends Controller
      */
     public function resources(Request $request): Response
     {
+        if(!$this->siteSettings()->resources_mod_enabled) {
+            abort(404);
+        }
         $perPage = 20;
         $search = $request->get('search');
         $page = $request->get('page', 1);
@@ -323,6 +347,9 @@ class GuestController extends Controller
      */
     public function resource(string $fileName): \Illuminate\Http\Response
     {
+        if(!$this->siteSettings()->resources_mod_enabled) {
+            abort(404);
+        }
         $action = request()->get('action', 'view');
 
         $document = Cache::remember("resource_file_{$fileName}", $this->cacheLifetime, function () use ($fileName) {
@@ -349,7 +376,7 @@ class GuestController extends Controller
                 ->header('Content-Type', $document->mime_type)
                 ->header('Content-Disposition', 'inline; filename="' . $document->original_file_name . '"');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             abort(404, 'File could not be retrieved');
         }
     }
@@ -405,12 +432,39 @@ class GuestController extends Controller
                 'message' => $request->message,
                 'user_id' => auth()->id(),
             ]);
-
             Cache::forget('contact_forms_admin');
+            $settings = $this->siteSettings();
+            if ($settings->notify_contact_form_submission && $settings->notify_contact_form_email) {
+                $emailAddresses = collect(explode(',', $settings->notify_contact_form_email))
+                    ->map(fn($email) => trim($email))
+                    ->filter(fn($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+                    ->toArray();
+
+                if (!empty($emailAddresses)) {
+                    $contactData = [
+                        'name' => $request->name,
+                        'email' => $request->email,
+                        'subject' => $request->subject ?: 'No Subject',
+                        'message' => $request->message,
+                    ];
+                    foreach ($emailAddresses as $emailAddress) {
+                        try {
+                            Mail::to($emailAddress)->send(new ContactFormSubmitted($contactData));
+                        } catch (Exception $mailException) {
+                            Log::warning('Failed to send contact form notification email', [
+                                'recipient' => $emailAddress,
+                                'error' => $mailException->getMessage(),
+                                'contact_name' => $request->name,
+                                'contact_email' => $request->email,
+                            ]);
+                        }
+                    }
+                }
+            }
 
             return back()->with('success', 'Your message has been sent successfully! We will get back to you soon.');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Contact form submission failed', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
@@ -426,15 +480,30 @@ class GuestController extends Controller
     /**
      * @return Response
      */
-    public function submitStory()
+    public function submitStory(): Response
     {
+        if(!$this->siteSettings()->blog_mod_enabled) {
+            abort(404);
+        }
         return Inertia::render('Guest/SubmitStory');
+    }
+
+    /**
+     * @return Response
+     */
+    public function faqs(): Response
+    {
+        $faqs = Faq::orderBy('created_at', 'desc')->get()->toArray();
+
+        return Inertia::render('Guest/Faqs', [
+            'faqs' => $faqs,
+        ]);
     }
 
     /**
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function storeStory(Request $request)
     {
@@ -442,6 +511,7 @@ class GuestController extends Controller
             $rules = [
                 'title' => 'required|string|max:255',
                 'content' => 'required|string|max:10000',
+                'email' => 'required|email|max:255',
                 'anonymous' => 'required|boolean',
             ];
             if (!$request->boolean('anonymous')) {
@@ -455,25 +525,53 @@ class GuestController extends Controller
                 'title.max' => 'The title cannot exceed 255 characters.',
                 'content.required' => 'Please share your story content.',
                 'content.max' => 'The story content cannot exceed 10,000 characters.',
+                'email.required' => 'Please provide an email address for notifications.',
+                'email.email' => 'Please provide a valid email address.',
+                'email.max' => 'The email address cannot exceed 255 characters.',
                 'author.required' => 'Please provide an author name or check anonymous.',
                 'author.max' => 'The author name cannot exceed 100 characters.',
                 'anonymous.required' => 'Please specify if you want to remain anonymous.',
             ]);
 
-            PendingStory::create([
+            $story = PendingStory::create([
                 'title' => $validated['title'],
                 'content' => $validated['content'],
                 'author' => $validated['anonymous'] ? null : $validated['author'],
+                'email' => $validated['email'],
                 'anonymous' => $validated['anonymous'],
             ]);
 
+            $settings = Setting::find(1);
+            if ($settings && $settings->notify_contact_form_submission && $settings->notify_contact_form_email) {
+                $emailAddresses = collect(explode(',', $settings->notify_contact_form_email))
+                    ->map(fn($email) => trim($email))
+                    ->filter(fn($email) => filter_var($email, FILTER_VALIDATE_EMAIL))
+                    ->toArray();
+
+                if (!empty($emailAddresses)) {
+                    foreach ($emailAddresses as $emailAddress) {
+                        try {
+                            Mail::to($emailAddress)->send(new StorySubmitted($story));
+                        } catch (Exception $mailException) {
+                            Log::warning('Failed to send story submission notification email', [
+                                'recipient' => $emailAddress,
+                                'error' => $mailException->getMessage(),
+                                'story_id' => $story->id,
+                                'story_title' => $story->title,
+                                'submitter_email' => $story->email,
+                            ]);
+                        }
+                    }
+                }
+            }
+
             return redirect()->back()->with([
-                'success' => 'Thank you for sharing your story! Your submission has been received and will be reviewed before publication.'
+                'success' => 'Thank you for sharing your story! Your submission has been received and will be reviewed before publication. We\'ll notify you by email once it\'s been reviewed.'
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Story submission failed: ' . $e->getMessage(), [
                 'user_data' => $request->all(),
                 'exception' => $e
@@ -483,5 +581,37 @@ class GuestController extends Controller
                 'error' => 'We encountered an error while processing your submission. Please try again, and if the problem persists, please contact us directly.'
             ])->withInput();
         }
+    }
+
+    /**
+     * @return Response
+     */
+    public function privacyPolicy(): Response
+    {
+        return Inertia::render('Guest/PrivacyPolicy');
+    }
+
+    /**
+     * @return Response
+     */
+    public function cookiePolicy(): Response
+    {
+        return Inertia::render('Guest/CookiePolicy');
+    }
+
+    /**
+     * @return Response
+     */
+    public function termsOfUse(): Response
+    {
+        return Inertia::render('Guest/TermsOfUse');
+    }
+
+    /**
+     * @return Setting
+     */
+    private function siteSettings(): Setting
+    {
+        return Setting::find(1);
     }
 }

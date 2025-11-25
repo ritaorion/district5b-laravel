@@ -71,7 +71,7 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
 
     return (
         <PrimaryLayout>
-            <Head title="AA Meetings Calendar" />
+            <Head title="District Meetings Calendar" />
             <div className="container mx-auto py-6">
                 <div className="max-w-4xl mx-auto">
                     <Breadcrumbs
@@ -82,9 +82,9 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                     />
 
                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold mb-2">AA Meetings Calendar</h1>
+                        <h1 className="text-3xl font-bold mb-2">District Meetings Calendar</h1>
                         <p className="text-muted-foreground">
-                            Find upcoming Alcoholics Anonymous meetings and events in your area.
+                            Find upcoming District 5B meetings and events in your area.
                             {events.length > 0 && ` Currently showing ${events.length} events.`}
                         </p>
                     </div>
@@ -125,7 +125,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         </div>
                     </div>
 
-                    {/* Calendar header - days of week */}
                     <div className="grid grid-cols-7 gap-1 mb-1">
                         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                             <div key={day} className="text-center font-medium py-2 text-muted-foreground">
@@ -134,7 +133,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         ))}
                     </div>
 
-                    {/* Calendar grid */}
                     <div className="grid grid-cols-7 gap-1 mb-6">
                         {days.map((day, index) => {
                             const dayEvents = getEventsForDay(day)
@@ -170,7 +168,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         })}
                     </div>
 
-                    {/* No events message */}
                     {events.length === 0 && (
                         <div className="text-center py-10">
                             <p className="text-muted-foreground">
@@ -181,7 +178,6 @@ export default function Meetings({ events: initialEvents, searchTerm }: Meetings
                         </div>
                     )}
 
-                    {/* Event Detail Dialog */}
                     {isDialogOpen && selectedEvent && (
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogContent>

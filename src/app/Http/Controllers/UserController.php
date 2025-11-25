@@ -9,6 +9,11 @@ use App\Models\User;
 use App\Models\Event;
 use App\Models\Faq;
 use App\Models\Document;
+use App\Models\Roster;
+use App\Models\PendingStory;
+use App\Mail\UserWelcome;
+use App\Mail\StoryApproved;
+use App\Mail\StoryRejected;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -16,8 +21,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -96,6 +104,58 @@ class UserController extends Controller
         return Inertia::render('User/Users', [
             'users' => $users,
         ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function createUser(Request $request): JsonResponse
+    {
+        try {
+            $validatedData = $request->validate([
+                'username' => 'required|string|max:255|unique:users,username',
+                'email' => 'required|email|max:255|unique:users,email',
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'is_admin' => 'boolean',
+            ]);
+
+            $user = User::create([
+                'username' => $validatedData['username'],
+                'email' => $validatedData['email'],
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name'],
+                'is_admin' => $validatedData['is_admin'] ?? false,
+                'password' => Str::random(32),
+                'email_verified_at' => null,
+            ]);
+
+            $passwordSetupUrl = URL::temporarySignedRoute(
+                'password.setup',
+                now()->addHours(24),
+                ['user' => $user->id]
+            );
+
+            Mail::send(new UserWelcome($user, $passwordSetupUrl));
+
+            Cache::forget('users');
+
+            return response()->json([
+                'message' => 'User created successfully. Welcome email sent.',
+                'user' => $user
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed: ' . implode(', ', array_map(fn($errors) => implode(', ', $errors), $e->errors()))
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to create user: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to create user: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -702,7 +762,7 @@ class UserController extends Controller
 
             return redirect()->route('auth.blogs')->with('success', 'Blog post created successfully!');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             Log::error('Blog creation failed: ' . $e->getMessage(), [
@@ -781,7 +841,7 @@ class UserController extends Controller
 
             return redirect()->route('auth.blogs')->with('success', 'Blog post updated successfully!');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             Log::error('Blog update failed: ' . $e->getMessage(), [
@@ -826,6 +886,107 @@ class UserController extends Controller
     }
 
     /**
+     * @return Response
+     */
+    public function meetings(): Response
+    {
+        return Inertia::render('User/Meetings');
+    }
+
+    /**
+     * @return Response
+     */
+    public function rosters(): Response
+    {
+        $cacheKey = 'rosters';
+
+        $rosters = Cache::remember($cacheKey, $this->cacheLifetime, function () {
+            return Roster::orderBy('created_at', 'desc')->get()->toArray();
+        });
+
+        return Inertia::render('User/Rosters', [
+            'rosters' => $rosters,
+        ]);
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function roster(int $id): JsonResponse
+    {
+        $cacheKey = 'roster';
+
+        $roster = Cache::remember("{$cacheKey}_{$id}", $this->cacheLifetime, function () use ($id) {
+            return Roster::findOrFail($id);
+        });
+
+        return response()->json($roster);
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function createRoster(Request $request): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $roster = Roster::create($validatedData);
+
+        Cache::forget('rosters');
+
+        return response()->json([
+            'message' => 'Roster entry created successfully.',
+            'roster' => $roster
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function updateRoster(Request $request, int $id): JsonResponse
+    {
+        $roster = Roster::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $roster->update($validatedData);
+
+        Cache::forget('rosters');
+        Cache::forget("roster_{$id}");
+
+        return response()->json(['message' => 'Roster entry updated successfully.']);
+    }
+
+    /**
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function deleteRoster(int $id): JsonResponse
+    {
+        $roster = Roster::findOrFail($id);
+        $roster->delete();
+
+        Cache::forget('rosters');
+        Cache::forget("roster_{$id}");
+
+        return response()->json(['message' => 'Roster entry deleted successfully.']);
+    }
+
+    /**
      * Generate a unique slug for the blog
      */
     private function generateUniqueSlug(string $title, ?int $excludeId = null): string
@@ -859,6 +1020,132 @@ class UserController extends Controller
     {
         for ($page = 1; $page <= 10; $page++) {
             Cache::forget("auth_blogs_p{$page}_s" . md5(''));
+        }
+    }
+
+    /**
+     * Display pending stories for admin review
+     */
+    public function pendingStories(): Response
+    {
+        $stories = PendingStory::orderBy('created_at', 'desc')->get();
+
+        return Inertia::render('User/PendingStories', [
+            'stories' => $stories,
+        ]);
+    }
+
+    /**
+     * Get a specific pending story for prefilling blog form
+     */
+    public function pendingStory(int $id): JsonResponse
+    {
+        try {
+            $story = PendingStory::findOrFail($id);
+
+            return response()->json($story);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Story not found'
+            ], 404);
+        }
+    }
+
+    /**
+     * Approve a pending story and notify the author
+     */
+    public function approvePendingStory(Request $request, int $id): JsonResponse
+    {
+        try {
+            $story = PendingStory::findOrFail($id);
+
+            try {
+                Mail::to($story->email)->send(new StoryApproved($story));
+            } catch (Exception $mailException) {
+                Log::warning('Failed to send story approval notification email', [
+                    'recipient' => $story->email,
+                    'error' => $mailException->getMessage(),
+                    'story_id' => $story->id,
+                    'story_title' => $story->title,
+                ]);
+            }
+
+            $story->update(['status' => 'approved']);
+
+            return response()->json([
+                'message' => 'Story approved successfully',
+                'story' => $story->fresh()
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to approve story', [
+                'story_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to approve story'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reject a pending story and notify the author
+     */
+    public function rejectPendingStory(Request $request, int $id): JsonResponse
+    {
+        try {
+            $story = PendingStory::findOrFail($id);
+
+            try {
+                Mail::to($story->email)->send(new StoryRejected($story));
+            } catch (Exception $mailException) {
+                Log::warning('Failed to send story rejection notification email', [
+                    'recipient' => $story->email,
+                    'error' => $mailException->getMessage(),
+                    'story_id' => $story->id,
+                    'story_title' => $story->title,
+                ]);
+            }
+
+            $story->update(['status' => 'rejected']);
+
+            return response()->json([
+                'message' => 'Story rejected successfully',
+                'story' => $story->fresh()
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to reject story', [
+                'story_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to reject story'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a pending story permanently
+     */
+    public function deletePendingStory(Request $request, int $id): JsonResponse
+    {
+        try {
+            $story = PendingStory::findOrFail($id);
+            $story->delete();
+
+            return response()->json([
+                'message' => 'Story deleted successfully'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to delete pending story', [
+                'story_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete story'
+            ], 500);
         }
     }
 }

@@ -56,7 +56,11 @@ const siteSettingsSchema = z.object({
     copyright_text_enabled: z.boolean(),
     copyright_text_content: z.string().nullable(),
     notify_contact_form_submission: z.boolean(),
-    notify_contact_form_email: z.string().email().nullable().or(z.literal('')),
+    notify_contact_form_email: z.string().refine((value) => {
+        if (!value || value.trim() === '') return true;
+        const emails = value.split(',').map(email => email.trim());
+        return emails.every(email => z.string().email().safeParse(email).success);
+    }, { message: "Please enter valid email addresses separated by commas" }).nullable().or(z.literal('')),
     site_title: z.string().nullable(),
     site_alert_enabled: z.boolean(),
     site_alert_content: z.string().nullable(),
@@ -145,7 +149,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
             <Head title="Site Settings" />
 
             <div className="space-y-6">
-                {/* Header */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="bg-blue-100 p-2 rounded-lg">
@@ -156,8 +159,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                             <p className="text-gray-600">Configure global settings and modules for your website</p>
                         </div>
                     </div>
-
-                    {/* Quick Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
                             <CardContent className="p-4">
@@ -198,8 +199,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                         </Card>
                     </div>
                 </div>
-
-                {/* Error Alert */}
                 {hasErrors && (
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -212,8 +211,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-
-                        {/* General Settings */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -253,8 +250,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                 />
                             </CardContent>
                         </Card>
-
-                        {/* Module Settings */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -309,8 +304,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Site Alerts */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -375,8 +368,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                 />
                             </CardContent>
                         </Card>
-
-                        {/* Contact Form Settings */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -428,13 +419,15 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                                             setData('notify_contact_form_email', e.target.value);
                                                         }}
                                                         onBlur={field.onBlur}
-                                                        type="email"
+                                                        type="text"
                                                         placeholder="admin@district5b.org"
                                                         className="max-w-lg"
                                                     />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    Email address where contact form notifications will be sent
+                                                    Email address where contact form notifications will be sent. Separate multiple emails with commas.
+                                                    <br/>
+                                                    For example: <code>some@email.com,test@email.com</code>
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
@@ -443,8 +436,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                 )}
                             </CardContent>
                         </Card>
-
-                        {/* Copyright Settings */}
                         <Card>
                             <CardHeader>
                                 <div className="flex items-center gap-2">
@@ -510,8 +501,6 @@ export default function SiteSettings({ settings }: SiteSettingsProps) {
                                 )}
                             </CardContent>
                         </Card>
-
-                        {/* Save Button */}
                         <div className="flex justify-end pt-6">
                             <Button type="submit" disabled={processing} size="lg" className="min-w-[140px]">
                                 {processing ? (

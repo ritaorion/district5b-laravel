@@ -22,7 +22,7 @@ class SiteSettingSeeder extends Seeder
             'roster_mod_enabled' => true,
             'copyright_text_enabled' => true,
             'copyright_text_content' => 'These pages are neither endorsed nor approved by Alcoholics Anonymous World Services, Inc.',
-            'notify_contact_form_submission' => true,
+            'notify_contact_form_submission' => false,
             'notify_contact_form_email' => null,
             'site_title' => 'District 5B',
             'site_alert_enabled' => false,

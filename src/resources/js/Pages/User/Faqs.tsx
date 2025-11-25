@@ -59,6 +59,7 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+
     const createForm = useForm({
         title: '',
         content: '',
@@ -177,7 +178,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
         return text.substring(0, maxLength) + '...';
     };
 
-    // Clear error after 5 seconds
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(null), 5000);
@@ -247,7 +247,7 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
+                                                    <DropdownMenu modal={false}>
                                                         <DropdownMenuTrigger>
                                                             <div className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
                                                                 <MoreHorizontal className="h-4 w-4" />
@@ -275,8 +275,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* Create FAQ Dialog */}
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -333,8 +331,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Edit FAQ Dialog */}
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                     <DialogContent className="sm:max-w-3xl">
                         <DialogHeader>
@@ -389,8 +385,6 @@ const Faqs = ({ faqs: initialFaqs }: FaqsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete FAQ Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

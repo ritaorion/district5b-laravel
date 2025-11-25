@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import PrimaryLayout from "@/Layouts/PrimaryLayout";
 import {
@@ -32,7 +32,7 @@ import {
     DialogTitle,
 } from '@/Components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
-import { AlertCircle, MoreHorizontal, Loader2, Sheet } from 'lucide-react';
+import { AlertCircle, MoreHorizontal, Loader2, Sheet, Eye } from 'lucide-react';
 import { ContactForm } from '@/types/ContactForm';
 import { toast } from 'sonner'
 import { Head } from '@inertiajs/react';
@@ -51,6 +51,7 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
+
 
     const fetchContactDetails = async (id: string | number) => {
         setLoadingDetails(true);
@@ -218,14 +219,14 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
                                                 </TableCell>
                                                 <TableCell>{formatDate(contact.created_at)}</TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
+                                                    <DropdownMenu modal={false}>
                                                         <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
                                                             <MoreHorizontal className="h-4 w-4" />
                                                             <span className="sr-only">Open menu</span>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuItem onClick={() => openViewDialog(contact.id)}>
-                                                                <Sheet className="mr-2 h-4 w-4" />
+                                                                <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => exportSingleForm(contact.id)}>
@@ -247,8 +248,6 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
                         )}
                     </CardContent>
                 </Card>
-
-                {/* View Contact Dialog */}
                 <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                     <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
@@ -308,8 +307,6 @@ const ContactForms = ({ forms: initialForms }: IContactFormsProps) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-
-                {/* Delete Contact Dialog */}
                 <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                     <DialogContent>
                         <DialogHeader>

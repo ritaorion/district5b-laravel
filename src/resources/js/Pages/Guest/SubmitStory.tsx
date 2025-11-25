@@ -27,6 +27,7 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
         title: '',
         content: '',
         author: '',
+        email: '',
         anonymous: false as boolean,
     });
 
@@ -37,6 +38,7 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                 title: '',
                 content: '',
                 author: '',
+                email: '',
                 anonymous: false,
             })
         }
@@ -68,7 +70,7 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
     const handleAnonymousChange = (checked: boolean) => {
         setData('anonymous', checked);
         if (checked) {
-            setData('author', ''); // Clear author when anonymous is checked
+            setData('author', '');
         }
     };
 
@@ -77,7 +79,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
             <Head title="Submit Your Story" />
 
             <div className="max-w-4xl mx-auto">
-                {/* Header Section */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center mb-4">
                         <div className="bg-blue-100 p-3 rounded-full">
@@ -93,7 +94,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                     </p>
                 </div>
 
-                {/* Success Message */}
                 <AnimatePresence>
                     {wasSuccessful && (
                         <motion.div
@@ -110,7 +110,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                     )}
                 </AnimatePresence>
 
-                {/* Error Message */}
                 <AnimatePresence>
                     {showError && flash?.error && (
                         <motion.div
@@ -127,7 +126,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                     )}
                 </AnimatePresence>
 
-                {/* Form Card */}
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="text-2xl">Your Story Details</CardTitle>
@@ -137,7 +135,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Title Field */}
                             <div className="space-y-2">
                                 <Label htmlFor="title" className="text-base font-medium">
                                     Story Title *
@@ -154,7 +151,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                                 <InputError message={errors.title} className="mt-2" />
                             </div>
 
-                            {/* Content Field */}
                             <div className="space-y-2">
                                 <Label htmlFor="content" className="text-base font-medium">
                                     Your Story *
@@ -170,14 +166,32 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                                 <InputError message={errors.content} className="mt-2" />
                             </div>
 
-                            {/* Author Field */}
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-base font-medium">
+                                    Email Address *
+                                </Label>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    We'll use this email to notify you when your story is reviewed and if it's published or if we need more information.
+                                </p>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="Enter your email address"
+                                    className="text-base"
+                                    disabled={processing}
+                                />
+                                <InputError message={errors.email} className="mt-2" />
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="author" className="text-base font-medium">
                                     Author Name {!data.anonymous && '*'}
                                 </Label>
                                 <p className="text-sm text-gray-600 mb-2">
                                     If you wish to go by your first name, or last initial, etc. you may do so by filling out this field.
-                                    Otherwise, check the box below to remain anonymous.
+                                    Otherwise, check the box below to remain anonymous. <strong>Anonymity will be protected before all stories all published.</strong>
                                 </p>
                                 <Input
                                     id="author"
@@ -191,7 +205,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                                 <InputError message={errors.author} className="mt-2" />
                             </div>
 
-                            {/* Anonymous Checkbox */}
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="anonymous"
@@ -204,7 +217,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                                 </Label>
                             </div>
 
-                            {/* Submit Button */}
                             <div className="pt-4">
                                 <Button
                                     type="submit"
@@ -228,7 +240,6 @@ const SubmitStoryPage = ({ flash }: SubmitStoryPageProps) => {
                     </CardContent>
                 </Card>
 
-                {/* Guidelines Section */}
                 <Card className="mt-8 bg-blue-50 border-blue-200">
                     <CardHeader>
                         <CardTitle className="text-xl text-blue-900">Submission Guidelines</CardTitle>

@@ -10,7 +10,9 @@ class PendingStory extends Model
         'title',
         'content',
         'author',
+        'email',
         'anonymous',
+        'status',
     ];
 
     protected $casts = [

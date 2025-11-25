@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PasswordSetupController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\UserController;
@@ -19,6 +20,7 @@ if(App::environment() === 'local') {
 }
 
 Route::controller(GuestController::class)
+    ->middleware('guest')
     ->name('guest.')
     ->group(function() {
         Route::get('/', 'index')->name('index');
@@ -36,18 +38,31 @@ Route::controller(GuestController::class)
         Route::get('/resources/{fileName}', 'resource')->name('resource.show');
         Route::get('/contact', 'contact')->name('contact');
         Route::post('/contact', 'sendContactForm')->name('contact.send');
+        Route::get('/faqs', 'faqs')->name('faqs');
+
+        Route::get('/privacy-policy', 'privacyPolicy')->name('privacy-policy');
+        Route::get('/cookie-policy', 'cookiePolicy')->name('cookie-policy');
+        Route::get('/terms-of-use', 'termsOfUse')->name('terms-of-use');
+    });
+
+Route::controller(PasswordSetupController::class)
+    ->name('password.')
+    ->group(function() {
+        Route::get('/password-setup/{user}', 'show')->name('setup');
+        Route::post('/password-setup/{user}', 'store')->name('setup.store');
     });
 
 Route::controller(UserController::class)
     ->name('auth.')
     ->prefix('auth')
-    ->middleware(['auth'])
+    ->middleware('auth')
     ->group(function() {
         Route::get('/dashboard', 'index')->name('index');
         Route::get('/contact-forms', 'contactForms')->name('contact-forms');
         Route::get('/contact-forms/{id}', 'contactForm')->name('contact-form.show');
         Route::delete('/contact-forms/{id}', 'deleteContactForm')->name('contact-form.destroy');
         Route::get('/users', 'users')->name('users');
+        Route::post('/users', 'createUser')->name('user.store');
         Route::get('/users/{id}', 'user')->name('user.show');
         Route::patch('/users/{id}', 'updateUser')->name('user.update');
         Route::delete('/users/{id}', 'deleteUser')->name('user.destroy');
@@ -76,6 +91,17 @@ Route::controller(UserController::class)
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        Route::get('/meetings', 'meetings')->name('meetings');
+        Route::get('/rosters', 'rosters')->name('rosters');
+        Route::get('/rosters/{id}', 'roster')->name('roster.show');
+        Route::post('/rosters', 'createRoster')->name('roster.store');
+        Route::patch('/rosters/{id}', 'updateRoster')->name('roster.update');
+        Route::delete('/rosters/{id}', 'deleteRoster')->name('roster.destroy');
+        Route::get('/pending-stories', 'pendingStories')->name('pending-stories');
+        Route::get('/pending-stories/{id}', 'pendingStory')->name('pending-story.show');
+        Route::post('/pending-stories/{id}/approve', 'approvePendingStory')->name('pending-story.approve');
+        Route::post('/pending-stories/{id}/reject', 'rejectPendingStory')->name('pending-story.reject');
+        Route::delete('/pending-stories/{id}', 'deletePendingStory')->name('pending-story.destroy');
 
         Route::post('/clear-cache', 'clearCache')->name('clear-cache');
     });

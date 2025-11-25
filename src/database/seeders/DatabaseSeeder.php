@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentSeeder::class);
         $this->call(ContactSeeder::class);
         $this->call(FaqSeeder::class);
-        $this->call(StorySeeder::class);
-        $this->call(EventSeeder::class);
+        //$this->call(StorySeeder::class);
+        //$this->call(EventSeeder::class);
         $this->call(RosterSeeder::class);
     }
 }
