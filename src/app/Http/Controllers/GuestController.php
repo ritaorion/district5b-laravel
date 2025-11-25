@@ -272,7 +272,7 @@ class GuestController extends Controller
         $cacheKey = "upcoming_events_p{$page}_s" . md5($search ?? '');
 
         $data = Cache::remember($cacheKey, $this->cacheLifetime, function () use ($search, $perPage) {
-            $query = Event::where('start_time', '>', now())
+            $query = Event::where('end_time', '>', now())
                 ->orderBy('start_time', 'asc');
 
             if ($search) {
