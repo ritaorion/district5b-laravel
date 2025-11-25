@@ -295,6 +295,18 @@ const Events = ({ events: initialEvents }: EventsProps) => {
         }
     }, [error]);
 
+    // Fix body pointer-events when dialogs close
+    useEffect(() => {
+        if (!isEditDialogOpen && !isCreateDialogOpen && !isDeleteDialogOpen) {
+            // Small delay to ensure Radix has finished its cleanup
+            const timer = setTimeout(() => {
+                document.body.style.pointerEvents = '';
+                document.body.style.overflow = '';
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isEditDialogOpen, isCreateDialogOpen, isDeleteDialogOpen]);
+
     return (
         <PrimaryLayout>
             <Head title="Events" />
@@ -480,10 +492,11 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                                 </Label>
                                 <div className="col-span-3">
                                     <div className="flex items-center gap-2">
-                                        <Input
+                                        <input
                                             id="create-file"
                                             ref={createFileInputRef}
                                             type="file"
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
@@ -653,10 +666,11 @@ const Events = ({ events: initialEvents }: EventsProps) => {
                                     )}
 
                                     <div className="flex items-center gap-2">
-                                        <Input
+                                        <input
                                             id="edit-file"
                                             ref={editFileInputRef}
                                             type="file"
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
